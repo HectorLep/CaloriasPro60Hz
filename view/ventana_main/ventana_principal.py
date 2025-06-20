@@ -13,7 +13,6 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QPixmap, QFont, QIcon
 from ..sidebar import Sidebar
 from .welcome_screen import WelcomeScreen
-from ..registrar_alimento import RegistrarAlimento
 from ..grafico import Grafico
 from ..historial import Historial
 from ..salud.salud import Salud
@@ -23,7 +22,7 @@ from view.login.login_form import LoginForm, IniciarSesionForm, RegistroForm
 from model.login.auth_service import AuthService
 from model.login.user_database import UserDatabase
 from view.agregar_alimento.agregar_alimento import Agregar_Alimento
-
+from controller.registrar_alimento.registrar_alimento import RegistroAlimentoPyQt6
 
 class LoginScreen(QWidget):
     """
@@ -210,7 +209,7 @@ class MainWindow(QMainWindow):
         
         # Crear todas las pantallas
         self.welcome_screen = WelcomeScreen()
-        self.registrar_alimento = RegistrarAlimento()
+        self.registrar_alimento = RegistroAlimentoPyQt6(usuario=self.current_user)
         
         # INSTANCIACIÓN CORREGIDA DE AGREGAR ALIMENTO
         # Pasamos los parámetros requeridos: panel_principal, color, usuario
