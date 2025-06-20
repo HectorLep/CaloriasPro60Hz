@@ -21,15 +21,15 @@ class InfoButton(QPushButton):
     """Botón de información personalizado"""
     def __init__(self, text="i", parent=None):
         super().__init__(text, parent)
-        self.setFixedSize(30, 30)
+        self.setFixedSize(35, 35)
         self.setStyleSheet("""
             QPushButton {
                 background-color: #2ECC71;
                 color: white;
                 border: none;
-                border-radius: 15px;
+                border-radius: 17px;
                 font-weight: bold;
-                font-size: 16px;
+                font-size: 18px;
                 font-style: italic;
                 font-family: 'Times New Roman';
             }
@@ -46,27 +46,28 @@ class ConfigFrame(QFrame):
         self.setStyleSheet(f"""
             QFrame {{
                 background-color: {bg_color};
-                border-radius: 20px;
-                padding: 5px;
+                border-radius: 15px;
+                padding: 10px;
             }}
         """)
 
 class ConfigLabel(QLabel):
     """Label personalizado para mostrar información del usuario"""
-    def __init__(self, text, color="white", font_size=12, parent=None):
+    def __init__(self, text, color="white", font_size=14, parent=None):
         super().__init__(text, parent)
         self.setStyleSheet(f"""
             QLabel {{
                 color: {color};
                 font-size: {font_size}px;
                 background-color: transparent;
-                padding: 2px;
+                padding: 4px;
+                font-family: Arial;
             }}
         """)
 
 class ConfigButton(QPushButton):
     """Botón personalizado para configuración"""
-    def __init__(self, text, width=335, height=55, bg_color="#2ECC71", 
+    def __init__(self, text, width=420, height=65, bg_color="#2ECC71", 
                  hover_color="#27AE60", text_color="#2C3E50", parent=None):
         super().__init__(text, parent)
         self.setFixedSize(width, height)
@@ -75,8 +76,8 @@ class ConfigButton(QPushButton):
                 background-color: {bg_color};
                 color: {text_color};
                 border: none;
-                border-radius: 15px;
-                font-size: 19px;
+                border-radius: 20px;
+                font-size: 20px;
                 font-weight: bold;
                 font-family: Arial;
             }}
@@ -94,16 +95,16 @@ class ConfigButton(QPushButton):
 
 class DangerButton(QPushButton):
     """Botón de peligro personalizado"""
-    def __init__(self, text, width=215, height=46, parent=None):
+    def __init__(self, text, width=260, height=55, parent=None):
         super().__init__(text, parent)
         self.setFixedSize(width, height)
         self.setStyleSheet(f"""
             QPushButton {{
                 background-color: #E74C3C;
-                color: #2C3E50;
+                color: white;
                 border: none;
-                border-radius: 10px;
-                font-size: 16px;
+                border-radius: 15px;
+                font-size: 18px;
                 font-weight: bold;
                 font-family: Arial;
             }}
@@ -120,30 +121,30 @@ class PasswordDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Confirmar Eliminación de Cuenta")
-        self.setFixedSize(400, 250)
+        self.setFixedSize(450, 280)
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint)
         
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(25)
+        layout.setContentsMargins(25, 25, 25, 25)
         
         # Título
         title_label = QLabel("Ingresa tu contraseña")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setFont(QFont("Arial", 20))
+        title_label.setFont(QFont("Arial", 22))
         title_label.setStyleSheet("color: #2C3E50; font-weight: bold;")
         layout.addWidget(title_label)
         
         # Campo de contraseña
         self.password_entry = QLineEdit()
         self.password_entry.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password_entry.setFixedSize(250, 40)
+        self.password_entry.setFixedSize(280, 45)
         self.password_entry.setStyleSheet("""
             QLineEdit {
                 border: 2px solid #BDC3C7;
-                border-radius: 20px;
-                padding: 8px 12px;
-                font-size: 14px;
+                border-radius: 22px;
+                padding: 10px 15px;
+                font-size: 16px;
                 background-color: white;
                 color: black;
             }
@@ -160,15 +161,15 @@ class PasswordDialog(QDialog):
         
         # Botones
         self.confirm_btn = QPushButton("Confirmar Eliminación")
-        self.confirm_btn.setFixedSize(200, 40)
+        self.confirm_btn.setFixedSize(230, 45)
         self.confirm_btn.setStyleSheet("""
             QPushButton {
                 background-color: #E74C3C;
                 color: white;
                 border: none;
-                border-radius: 20px;
+                border-radius: 22px;
                 font-weight: bold;
-                font-size: 14px;
+                font-size: 16px;
             }
             QPushButton:hover {
                 background-color: #C0392B;
@@ -176,15 +177,15 @@ class PasswordDialog(QDialog):
         """)
         
         self.cancel_btn = QPushButton("Cancelar")
-        self.cancel_btn.setFixedSize(200, 40)
+        self.cancel_btn.setFixedSize(230, 45)
         self.cancel_btn.setStyleSheet("""
             QPushButton {
                 background-color: #95A5A6;
                 color: white;
                 border: none;
-                border-radius: 20px;
+                border-radius: 22px;
                 font-weight: bold;
-                font-size: 14px;
+                font-size: 16px;
             }
             QPushButton:hover {
                 background-color: #7F8C8D;
@@ -192,7 +193,7 @@ class PasswordDialog(QDialog):
         """)
         
         button_layout = QVBoxLayout()
-        button_layout.setSpacing(10)
+        button_layout.setSpacing(15)
         button_layout.addWidget(self.confirm_btn)
         button_layout.addWidget(self.cancel_btn)
         layout.addLayout(button_layout)
@@ -228,28 +229,28 @@ class ConfigUI(QWidget, BaseWidget):
         """Inicializa la interfaz de usuario"""
         self.setWindowTitle("Configuración")
         
-        # Layout principal
-        main_layout = QHBoxLayout(self)
-        main_layout.setSpacing(20)
-        main_layout.setContentsMargins(10, 10, 10, 10)
+        # Layout principal - usar todo el espacio disponible
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Frame principal de fondo
-        self.main_frame = ConfigFrame(750, 500, "#2C3E50")
+        # Frame principal que ocupe todo el espacio
+        self.main_frame = QFrame()
+        self.main_frame.setStyleSheet("""
+            QFrame {
+                background-color: #3c3c3c;
+                border: none;
+            }
+        """)
         main_layout.addWidget(self.main_frame)
         
         # Layout dentro del frame principal
         content_layout = QVBoxLayout(self.main_frame)
-        content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(0)
+        content_layout.setContentsMargins(30, 20, 30, 20)
+        content_layout.setSpacing(20)
         
-        # Botón de ayuda (esquina superior derecha)
-        help_layout = QHBoxLayout()
-        help_layout.addStretch()
-        self.boton_ayuda = InfoButton("i")
-        self.boton_ayuda.clicked.connect(self.mostrar_advertencia)
-        help_layout.addWidget(self.boton_ayuda)
-        help_layout.setContentsMargins(0, 15, 25, 0)
-        content_layout.addLayout(help_layout)
+        # Header con botón de ayuda
+        self.create_header(content_layout)
         
         # Título
         self.create_title_section(content_layout)
@@ -257,9 +258,28 @@ class ConfigUI(QWidget, BaseWidget):
         # Contenido principal
         self.create_main_content(content_layout)
 
+    def create_header(self, parent_layout):
+        """Crea el header con el botón de ayuda"""
+        header_layout = QHBoxLayout()
+        header_layout.addStretch()
+        
+        self.boton_ayuda = InfoButton("i")
+        self.boton_ayuda.clicked.connect(self.mostrar_advertencia)
+        header_layout.addWidget(self.boton_ayuda)
+        
+        parent_layout.addLayout(header_layout)
+
     def create_title_section(self, parent_layout):
         """Crea la sección del título"""
-        title_frame = ConfigFrame(680, 55, "#2ECC71")
+        title_frame = QFrame()
+        title_frame.setFixedHeight(80)
+        title_frame.setStyleSheet("""
+            QFrame {
+                background-color: #2ECC71;
+                border-radius: 25px;
+            }
+        """)
+        
         title_layout = QHBoxLayout(title_frame)
         title_layout.setContentsMargins(0, 0, 0, 0)
         
@@ -268,7 +288,7 @@ class ConfigUI(QWidget, BaseWidget):
         self.titulo_label.setStyleSheet("""
             QLabel {
                 color: #2C3E50;
-                font-size: 27px;
+                font-size: 36px;
                 font-weight: bold;
                 font-family: Arial;
                 background-color: transparent;
@@ -276,25 +296,18 @@ class ConfigUI(QWidget, BaseWidget):
         """)
         title_layout.addWidget(self.titulo_label)
         
-        # Contenedor para centrar el título
-        title_container = QHBoxLayout()
-        title_container.addStretch()
-        title_container.addWidget(title_frame)
-        title_container.addStretch()
-        title_container.setContentsMargins(0, 10, 0, 0)
-        
-        parent_layout.addLayout(title_container)
+        parent_layout.addWidget(title_frame)
 
     def create_main_content(self, parent_layout):
         """Crea el contenido principal"""
         content_container = QHBoxLayout()
-        content_container.setSpacing(20)
-        content_container.setContentsMargins(35, 10, 35, 10)
+        content_container.setSpacing(30)
+        content_container.setContentsMargins(0, 0, 0, 0)
         
-        # Panel izquierdo - Botones
+        # Panel izquierdo - Botones (60% del ancho)
         self.create_buttons_panel(content_container)
         
-        # Panel derecho - Información del usuario
+        # Panel derecho - Información del usuario (40% del ancho)
         self.create_user_info_panel(content_container)
         
         parent_layout.addLayout(content_container)
@@ -302,10 +315,19 @@ class ConfigUI(QWidget, BaseWidget):
 
     def create_buttons_panel(self, parent_layout):
         """Crea el panel de botones"""
-        buttons_frame = ConfigFrame(390, 385, "#2C3E50")
+        buttons_frame = QFrame()
+        buttons_frame.setFixedWidth(480)
+        buttons_frame.setStyleSheet("""
+            QFrame {
+                background-color: #2C3E50;
+                border-radius: 20px;
+                padding: 20px;
+            }
+        """)
+        
         buttons_layout = QVBoxLayout(buttons_frame)
-        buttons_layout.setSpacing(50)
-        buttons_layout.setContentsMargins(30, 50, 30, 30)
+        buttons_layout.setSpacing(40)
+        buttons_layout.setContentsMargins(30, 40, 30, 40)
         
         # Botón actualizar información
         self.guardar_button = ConfigButton("Actualizar información")
@@ -318,7 +340,7 @@ class ConfigUI(QWidget, BaseWidget):
         buttons_layout.addWidget(self.mostrar_contra_button)
         
         # Botón configurar recordatorio
-        self.config_peso_button = ConfigButton("Configurar Recordatorio Peso", width=310)
+        self.config_peso_button = ConfigButton("Configurar Recordatorio Peso", width=380)
         self.config_peso_button.clicked.connect(self.mostrar_formulario_recordatorio)
         buttons_layout.addWidget(self.config_peso_button)
         
@@ -327,16 +349,33 @@ class ConfigUI(QWidget, BaseWidget):
 
     def create_user_info_panel(self, parent_layout):
         """Crea el panel de información del usuario"""
-        # Frame exterior claro
-        outer_frame = ConfigFrame(215, 260, "#95A5A6")
-        outer_layout = QVBoxLayout(outer_frame)
-        outer_layout.setContentsMargins(10, 10, 10, 10)
+        # Frame exterior
+        outer_frame = QFrame()
+        outer_frame.setFixedWidth(320)
+        outer_frame.setStyleSheet("""
+            QFrame {
+                background-color: #95A5A6;
+                border-radius: 20px;
+                padding: 15px;
+            }
+        """)
         
-        # Frame interior oscuro
-        inner_frame = ConfigFrame(195, 240, "#2C3E50")
+        outer_layout = QVBoxLayout(outer_frame)
+        outer_layout.setContentsMargins(15, 15, 15, 15)
+        
+        # Frame interior
+        inner_frame = QFrame()
+        inner_frame.setStyleSheet("""
+            QFrame {
+                background-color: #2C3E50;
+                border-radius: 15px;
+                padding: 20px;
+            }
+        """)
+        
         inner_layout = QVBoxLayout(inner_frame)
-        inner_layout.setSpacing(15)
-        inner_layout.setContentsMargins(15, 15, 15, 15)
+        inner_layout.setSpacing(12)
+        inner_layout.setContentsMargins(20, 20, 20, 20)
         
         # Cargar datos del usuario
         self.load_user_data(inner_layout)
@@ -352,13 +391,13 @@ class ConfigUI(QWidget, BaseWidget):
         try:
             edad, genero, peso, nivel_actividad, meta_cal, estatura = self.user_service.cargar_datos_usuario()
             
-            self.nombre_label = ConfigLabel(f"Nombre: {self.usuario}")
+            self.nombre_label = ConfigLabel(f"Nombre: {self.usuario}", font_size=15)
             self.edad_label = ConfigLabel(f"Edad: {edad}")
             self.genero_label = ConfigLabel(f"Género: {genero}")
             self.peso_label = ConfigLabel(f"Peso: {peso} kg")
             self.estatura_label = ConfigLabel(f"Estatura: {estatura} cm")
-            self.obj_calorias_label = ConfigLabel(f"Objetivo de Calorías: {meta_cal}")
-            self.lvl_actividad_label = ConfigLabel(f"Nivel de Actividad: {nivel_actividad}")
+            self.obj_calorias_label = ConfigLabel(f"Objetivo: {meta_cal} cal")
+            self.lvl_actividad_label = ConfigLabel(f"Actividad: {nivel_actividad}")
             
             layout.addWidget(self.nombre_label)
             layout.addWidget(self.edad_label)
@@ -390,7 +429,7 @@ class ConfigUI(QWidget, BaseWidget):
         """Configura los estilos generales"""
         self.setStyleSheet("""
             QWidget {
-                background-color: #ECF0F1;
+                background-color: #3c3c3c;
                 font-family: Arial;
             }
         """)
@@ -454,7 +493,6 @@ class ConfigUI(QWidget, BaseWidget):
         
         # Recargar datos del usuario
         try:
-            # Limpiar el layout de información del usuario y recargar
             self.recreate_user_info()
         except Exception as e:
             print(f"Error al recargar datos: {e}")
@@ -462,7 +500,6 @@ class ConfigUI(QWidget, BaseWidget):
     def recreate_user_info(self):
         """Recrea la información del usuario"""
         # Esta función debería actualizar solo la sección de información del usuario
-        # Por simplicidad, se puede recrear toda la interfaz o solo actualizar los labels
         pass
 
     def cerrar_sesion(self):
