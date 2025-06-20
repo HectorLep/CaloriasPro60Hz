@@ -14,8 +14,8 @@ from PyQt6.QtGui import QPixmap, QFont, QIcon
 from ..sidebar import Sidebar
 from .welcome_screen import WelcomeScreen
 from ..grafico import Grafico
-from ..salud.salud import Salud
 from ..menu import Menu
+from view.salud.salud import Salud
 from controller.configuracion.configuracion import ConfigUI
 from view.login.login_form import LoginForm, IniciarSesionForm, RegistroForm
 from model.login.auth_service import AuthService

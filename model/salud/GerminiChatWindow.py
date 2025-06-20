@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QFrame, QMessageBox, QTextEdit,
-                             QScrollArea, QComboBox)
+                             QScrollArea, QComboBox, QDialog, QLineEdit,
+                             QCheckBox, QProgressBar)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject
 from .GerminiAssitant import GeminiAssistant
 
@@ -36,6 +37,116 @@ class ConnectionWorker(QObject):
             self.finished.emit(False, str(e))
 
 
+class APIKeySetupDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("🔐 Configuración de API Key")
+        self.setModal(True)
+        self.setFixedSize(450, 300)
+        
+        self.api_key = None
+        self.use_password = False
+        self.master_password = None
+        
+        self.init_ui()
+        self.setStyleSheet("""
+            QDialog { background-color: #2C3E50; }
+            QLabel { color: white; }
+            QLineEdit { 
+                background-color: white; 
+                border: 2px solid #BDC3C7; 
+                border-radius: 8px; 
+                padding: 8px; 
+                font-size: 14px; 
+            }
+            QLineEdit:focus { border: 2px solid #3498DB; }
+            QPushButton {
+                background-color: #27AE60; 
+                color: white; 
+                border: none;
+                border-radius: 8px; 
+                padding: 10px; 
+                font-size: 14px; 
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #2ECC71; }
+            QPushButton:pressed { background-color: #229954; }
+            QCheckBox { color: white; font-size: 12px; }
+            QCheckBox::indicator { width: 18px; height: 18px; }
+        """)
+    
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Título
+        title = QLabel("🔐 Configuración Segura de API Key")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: white; margin-bottom: 10px;")
+        layout.addWidget(title)
+        
+        # Descripción
+        desc = QLabel("Tu API key será encriptada y almacenada de forma segura.")
+        desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        desc.setStyleSheet("font-size: 12px; color: #BDC3C7; margin-bottom: 15px;")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+        
+        # Campo API Key
+        api_label = QLabel("🔑 API Key de Gemini:")
+        api_label.setStyleSheet("font-weight: bold;")
+        layout.addWidget(api_label)
+        
+        self.api_entry = QLineEdit()
+        self.api_entry.setPlaceholderText("Ingresa tu API key de Google Gemini")
+        self.api_entry.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addWidget(self.api_entry)
+        
+        # Checkbox para contraseña maestra
+        self.password_checkbox = QCheckBox("🔒 Usar contraseña maestra personalizada (opcional)")
+        self.password_checkbox.toggled.connect(self.toggle_password_field)
+        layout.addWidget(self.password_checkbox)
+        
+        # Campo contraseña maestra (inicialmente oculto)
+        self.password_entry = QLineEdit()
+        self.password_entry.setPlaceholderText("Contraseña maestra (opcional)")
+        self.password_entry.setEchoMode(QLineEdit.EchoMode.Password)
+        self.password_entry.hide()
+        layout.addWidget(self.password_entry)
+        
+        # Botones
+        button_layout = QHBoxLayout()
+        
+        self.save_button = QPushButton("💾 Guardar")
+        self.save_button.clicked.connect(self.save_configuration)
+        button_layout.addWidget(self.save_button)
+        
+        self.cancel_button = QPushButton("❌ Cancelar")
+        self.cancel_button.setStyleSheet("background-color: #E74C3C;")
+        self.cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(self.cancel_button)
+        
+        layout.addLayout(button_layout)
+    
+    def toggle_password_field(self, checked):
+        if checked:
+            self.password_entry.show()
+        else:
+            self.password_entry.hide()
+    
+    def save_configuration(self):
+        api_key = self.api_entry.text().strip()
+        if not api_key:
+            QMessageBox.warning(self, "⚠️ Advertencia", "Por favor ingresa tu API key")
+            return
+        
+        self.api_key = api_key
+        self.use_password = self.password_checkbox.isChecked()
+        self.master_password = self.password_entry.text().strip() if self.use_password else None
+        
+        self.accept()
+
 class GeminiChatWindow(QWidget):
     def __init__(self, usuario, parent=None):
         super().__init__(parent)
@@ -48,12 +159,94 @@ class GeminiChatWindow(QWidget):
         
         self.init_ui()
         self.setup_styles()
+        
+        # Verificar configuración de API key antes de continuar
+        self.check_api_key_configuration()
+        
         self.show_connection_status()
         self.initialize_chat()
         
         self.raise_()
         self.activateWindow()
-    
+        
+    def check_api_key_configuration(self):
+        """Verifica y solicita configuración de API key si es necesario"""
+        try:
+            status = self.assistant.get_api_key_status()
+            
+            if status == "not_configured":
+                # Mostrar diálogo de configuración
+                self.show_api_key_setup_dialog()
+            elif status == "configured_but_error":
+                # Hay configuración pero error al cargar
+                reply = QMessageBox.question(
+                    self, 
+                    "⚠️ Error de API Key",
+                    "Hay una configuración de API key pero no se pudo cargar.\n¿Deseas reconfigurarla?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                if reply == QMessageBox.StandardButton.Yes:
+                    self.show_api_key_setup_dialog()
+            elif status == "using_environment":
+                # Usando variable de entorno - mostrar información
+                self.status_label.setText("📁 Usando API key de variable de entorno")
+                self.status_label.setStyleSheet("color: #F39C12; font-size: 12px;")
+            elif status == "configured_and_loaded":
+                # Todo correcto
+                self.status_label.setText("🔐 API key configurada de forma segura")
+                self.status_label.setStyleSheet("color: #2ECC71; font-size: 12px;")
+            
+        except Exception as e:
+            print(f"Error verificando configuración de API key: {e}")
+            QMessageBox.critical(self, "❌ Error", f"Error verificando configuración: {str(e)}")
+
+    def show_api_key_setup_dialog(self):
+        """Muestra el diálogo de configuración de API key"""
+        try:
+            dialog = APIKeySetupDialog(self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                # Configurar API key con los datos del diálogo
+                self.setup_api_key_with_dialog_data(dialog)
+            else:
+                # Usuario canceló - mostrar mensaje
+                QMessageBox.information(
+                    self, 
+                    "ℹ️ Información",
+                    "Sin API key configurada, el asistente no podrá funcionar.\nPuedes configurarla más tarde desde el menú."
+                )
+        except Exception as e:
+            print(f"Error mostrando diálogo de configuración: {e}")
+            QMessageBox.critical(self, "❌ Error", f"Error en configuración: {str(e)}")
+
+    def setup_api_key_with_dialog_data(self, dialog):
+        """Configura la API key usando los datos del diálogo"""
+        try:
+            # Mostrar barra de progreso
+            progress = QProgressBar()
+            progress.setRange(0, 0)  # Indeterminado
+            progress.setStyleSheet("QProgressBar { border: 2px solid #BDC3C7; border-radius: 5px; }")
+            
+            # Configurar API key
+            success, message = self.assistant.setup_secure_api_key(
+                api_key=dialog.api_key,
+                use_master_password=dialog.use_password,
+                master_password=dialog.master_password
+            )
+            
+            if success:
+                QMessageBox.information(self, "✅ Éxito", "API key configurada correctamente")
+                self.status_label.setText("🔐 API key configurada de forma segura")
+                self.status_label.setStyleSheet("color: #2ECC71; font-size: 12px;")
+                # Reconectar
+                self.show_connection_status()
+            else:
+                QMessageBox.critical(self, "❌ Error", f"Error configurando API key:\n{message}")
+                
+        except Exception as e:
+            print(f"Error configurando API key: {e}")
+            QMessageBox.critical(self, "❌ Error", f"Error en configuración: {str(e)}")
+
+
     def init_ui(self):
         self.setWindowTitle("Asistente de Salud IA")
         self.setGeometry(100, 100, 800, 600)
@@ -72,6 +265,27 @@ class GeminiChatWindow(QWidget):
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title_label.setStyleSheet("color: white; font-size: 20px; font-weight: bold;")
         header_layout.addWidget(self.title_label)
+        config_button_layout = QHBoxLayout()
+        config_button_layout.addStretch()
+        
+        self.config_button = QPushButton("⚙️")
+        self.config_button.setFixedSize(30, 30)
+        self.config_button.setToolTip("Configuración de API Key")
+        self.config_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3498DB; 
+                color: white; 
+                border: none;
+                border-radius: 15px; 
+                font-size: 12px;
+            }
+            QPushButton:hover { background-color: #2980B9; }
+        """)
+        self.config_button.clicked.connect(self.show_api_key_setup_dialog)
+        config_button_layout.addWidget(self.config_button)
+        
+        header_layout.addLayout(config_button_layout)
+
         
         self.status_label = QLabel("🔄 Conectando con Gemini...")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
