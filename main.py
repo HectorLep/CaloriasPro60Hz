@@ -18,7 +18,7 @@ def main():
     # Crear y mostrar la ventana principal
     window = MainWindow()
     window.show()
-    
+        
     sys.exit(app.exec())
 
 if __name__ == "__main__":
