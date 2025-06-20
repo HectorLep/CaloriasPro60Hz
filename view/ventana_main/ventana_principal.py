@@ -14,7 +14,6 @@ from PyQt6.QtGui import QPixmap, QFont, QIcon
 from ..sidebar import Sidebar
 from .welcome_screen import WelcomeScreen
 from ..grafico import Grafico
-from ..historial import Historial
 from ..salud.salud import Salud
 from ..menu import Menu
 from controller.configuracion.configuracion import ConfigUI
@@ -23,6 +22,7 @@ from model.login.auth_service import AuthService
 from model.login.user_database import UserDatabase
 from view.agregar_alimento.agregar_alimento import Agregar_Alimento
 from controller.registrar_alimento.registrar_alimento import RegistroAlimentoPyQt6
+from controller.historial.historial import Historial
 
 class LoginScreen(QWidget):
     """
@@ -220,8 +220,12 @@ class MainWindow(QMainWindow):
         )
         
         self.grafico = Grafico()
-        self.historial = Historial()
-
+        # Por esta:
+        self.historial = Historial(
+            panel_principal=self.stacked_widget,
+            color="#3c3c3c", 
+            usuario=self.current_user
+)
         self.settings = ConfigUI(self, "#3c3c3c", self.current_user)
         
         self.salud = Salud()
