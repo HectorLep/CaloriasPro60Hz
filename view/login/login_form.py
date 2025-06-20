@@ -5,9 +5,8 @@ Formularios de Login convertidos a PyQt6
 """
 
 import sqlite3
-from datetime import datetime, timedelta
-from abc import ABC, abstractmethod
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+from datetime import datetime
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, 
                              QPushButton, QLineEdit, QComboBox, QFrame,
                              QScrollArea, QDateEdit, QMessageBox, QSpacerItem,
                              QSizePolicy)

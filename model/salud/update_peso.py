@@ -1,10 +1,9 @@
-from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QLineEdit, QMessageBox, QFrame)
+from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QLabel, 
+                             QPushButton, QLineEdit, QMessageBox)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from datetime import datetime
 from model.util.base import DBManager
-import sqlite3
 
 class Peso(QDialog):
     # Señal para notificar cuando se actualiza el peso

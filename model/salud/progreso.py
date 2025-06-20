@@ -2,9 +2,8 @@ import sqlite3
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
-from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QLabel, QVBoxLayout
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
 from model.util.colores import *
 
 

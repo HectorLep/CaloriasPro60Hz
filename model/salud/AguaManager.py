@@ -1,15 +1,12 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QFrame, QMessageBox)
+                             QPushButton, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QFont, QPalette, QColor, QPainter, QPixmap, QImage, QPen
+from PyQt6.QtGui import QColor, QPainter, QPen
 from .calculos import Calculo
 from model.util.colores import *
 import sqlite3
 from datetime import datetime
 import numpy as np
-from PIL import Image
-import sys
-import os
 
 class VasoAnimado(QWidget):
     """Widget que dibuja y anima un vaso de agua"""

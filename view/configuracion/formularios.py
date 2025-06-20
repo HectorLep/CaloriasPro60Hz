@@ -5,7 +5,6 @@ Clase base abstracta para formularios
 """
 
 from abc import ABC, abstractmethod
-from PyQt6.QtWidgets import QDialog
 
 class FormHandler(ABC):
     @abstractmethod

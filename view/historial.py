@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QTableWidget, QTableWidgetItem,
                              QDateEdit, QComboBox, QLineEdit, QGroupBox,
                              QHeaderView, QAbstractItemView, QMessageBox)
-from PyQt6.QtCore import Qt, QDate, pyqtSignal
+from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QFont
 
 class Historial(QWidget):

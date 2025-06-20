@@ -1,11 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QFrame, QMessageBox, QTextEdit,
-                             QScrollArea, QComboBox, QSizePolicy)
+                             QScrollArea, QComboBox)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject
-from PyQt6.QtGui import QFont, QPalette, QColor, QTextCursor
-import threading
-from datetime import datetime
-
 from .GerminiAssitant import GeminiAssistant
 
 

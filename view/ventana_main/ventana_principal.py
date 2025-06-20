@@ -11,8 +11,6 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QInputDialog, QLineEdit)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QPixmap, QFont, QIcon
-
-# --- Imports Actualizados ---
 from ..sidebar import Sidebar
 from .welcome_screen import WelcomeScreen
 from ..registrar_alimento import RegistrarAlimento
@@ -21,24 +19,12 @@ from ..grafico import Grafico
 from ..historial import Historial
 from ..salud.salud import Salud
 from ..menu import Menu
-
-# Importar los nuevos manejadores de formularios y servicios
-from model.configuracion.servicios_usuario import UserService
-from model.configuracion.mensajes import MessageHandler
-from view.configuracion.formulario_usuario import UpdateUserForm
-from view.configuracion.formulario_clave import PasswordForm
-from view.configuracion.formulario_recordatorio import ReminderForm
-
-# --- IMPORTS PARA EL LOGIN ---
-# Asumiendo que tienes estos módulos adaptados a PyQt6
+from controller.configuracion.configuracion import ConfigUI
 from view.login.login_form import LoginForm, IniciarSesionForm, RegistroForm
 from model.login.auth_service import AuthService
 from model.login.user_database import UserDatabase
 
 
-# /view/ventana_main/ventana_principal.py
-
-# --- Nueva Clase para la Pantalla de Login (REEMPLAZAR LA EXISTENTE) ---
 class LoginScreen(QWidget):
     """
     Pantalla de login que se muestra antes de acceder a la aplicación principal.
@@ -126,138 +112,12 @@ class LoginScreen(QWidget):
         if usuario_actual:
             self.login_successful.emit(usuario_actual)
 
-# --- Nueva Clase para la Pantalla de Configuración ---
-class SettingsScreen(QWidget):
-    """
-    Nuevo widget que actúa como un menú para las diferentes 
-    opciones de configuración.
-    """
-    def __init__(self, user_service: UserService, parent=None):
-        super().__init__(parent)
-        self.user_service = user_service
-        self.main_window = parent
-        
-        # Guardará una referencia al formulario de actualización de usuario
-        self.update_user_form = None
-        
-        self.init_ui()
-
-    def init_ui(self):
-        # Layout principal de la pantalla de configuración
-        main_layout = QVBoxLayout(self)
-        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        main_layout.setContentsMargins(50, 50, 50, 50)
-        main_layout.setSpacing(20)
-
-        # Contenedor para los botones principales
-        self.main_buttons_widget = QWidget()
-        buttons_layout = QVBoxLayout(self.main_buttons_widget)
-        buttons_layout.setSpacing(15)
-        buttons_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        # Botones de configuración
-        self.btn_update_user = self.create_button("Actualizar Mis Datos", self.show_update_user_form)
-        self.btn_update_password = self.create_button("Actualizar Contraseña", self.show_password_form)
-        self.btn_reminders = self.create_button("Configurar Recordatorios", self.show_reminder_form)
-        self.btn_delete_account = self.create_button("Eliminar Mi Cuenta", self.delete_account, "background-color: #e74c3c;") # Botón rojo
-        
-        # Botón para cerrar sesión
-        self.btn_logout = self.create_button("Cerrar Sesión", self.logout, "background-color: #f39c12;") # Botón naranja
-
-        buttons_layout.addWidget(self.btn_update_user)
-        buttons_layout.addWidget(self.btn_update_password)
-        buttons_layout.addWidget(self.btn_reminders)
-        buttons_layout.addWidget(self.btn_delete_account)
-        buttons_layout.addWidget(self.btn_logout)
-
-        main_layout.addWidget(self.main_buttons_widget)
-        
-        # Instanciar el formulario de actualización de datos de usuario
-        # Se le pasa 'self' como padre para que dibuje los widgets aquí
-        # y un callback para restaurar la vista.
-        self.update_user_form = UpdateUserForm(self, self.user_service, self.show_main_settings)
-        # Ocultar los widgets de este formulario al inicio
-        self.update_user_form.hide_widgets()
-
-    def create_button(self, text, on_click, style="background-color: #3498db;"):
-        """Función de ayuda para crear botones estandarizados."""
-        button = QPushButton(text)
-        button.setFixedSize(300, 50)
-        button.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        button.setStyleSheet(f"""
-            QPushButton {{
-                color: white;
-                {style}
-                border: none;
-                border-radius: 25px;
-            }}
-            QPushButton:hover {{
-                background-color: #2980b9;
-            }}
-        """)
-        button.clicked.connect(on_click)
-        return button
-
-    def show_main_settings(self):
-        """Muestra los botones principales y oculta los formularios."""
-        if self.update_user_form:
-            self.update_user_form.hide_widgets()
-        self.main_buttons_widget.show()
-
-    def show_update_user_form(self):
-        """Muestra el formulario para actualizar datos de usuario."""
-        self.main_buttons_widget.hide()
-        if self.update_user_form:
-            self.update_user_form.create_form()
-
-    def show_password_form(self):
-        """Lanza el diálogo para actualizar la contraseña."""
-        password_dialog = PasswordForm(self, self.user_service)
-        password_dialog.create_form()
-
-    def show_reminder_form(self):
-        """Lanza el diálogo para configurar recordatorios."""
-        reminder_dialog = ReminderForm(self, self.user_service)
-        reminder_dialog.create_form()
-        
-    def delete_account(self):
-        """Inicia el proceso de eliminación de cuenta."""
-        confirm = MessageHandler.confirmar_accion(
-            "Confirmar Eliminación",
-            "¿Estás seguro de que quieres eliminar tu cuenta? Esta acción es irreversible."
-        )
-        if confirm == "Sí":
-            password, ok = QInputDialog.getText(
-                self, 
-                "Verificación de Seguridad", 
-                "Por favor, introduce tu contraseña para confirmar:",
-                QLineEdit.EchoMode.Password
-            )
-            if ok and password:
-                if self.user_service.eliminar_usuario(password):
-                    MessageHandler.mostrar_info("Cuenta Eliminada", "Tu cuenta ha sido eliminada con éxito.")
-                    # Cierra la aplicación después de eliminar la cuenta
-                    self.main_window.close()
-                else:
-                    MessageHandler.mostrar_advertencia("Error", "La contraseña es incorrecta. No se pudo eliminar la cuenta.")
-    
-    def logout(self):
-        """Cerrar sesión y volver al login"""
-        confirm = MessageHandler.confirmar_accion(
-            "Cerrar Sesión",
-            "¿Estás seguro de que quieres cerrar la sesión actual?"
-        )
-        if confirm == "Sí":
-            self.main_window.logout()
-
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
         # --- Variables de estado ---
         self.current_user = None
-        self.user_service = None
         self.is_logged_in = False
         
         # --- Stack principal para manejar login/main ---
@@ -354,7 +214,9 @@ class MainWindow(QMainWindow):
         self.agregar_alimento = AgregarAlimento()
         self.grafico = Grafico()
         self.historial = Historial()
-        self.settings = SettingsScreen(self.user_service, self)
+
+        self.settings = ConfigUI(self, "#3c3c3c", self.current_user)
+        
         self.salud = Salud()
         self.menu = Menu()
         
@@ -434,23 +296,15 @@ class MainWindow(QMainWindow):
     def on_login_success(self, username):
         """Callback cuando el login es exitoso"""
         self.current_user = username
-        self.user_service = UserService(self.current_user)
-        
-        # Configurar la interfaz principal
         self.setup_main_interface()
         
         # Mostrar la interfaz principal
         self.show_main()
-        
-        # Aquí puedes agregar lógica adicional como recordatorios
-        # self.setup_recordatorios()
     
     def logout(self):
         """Cerrar sesión y volver al login"""
         # Limpiar datos del usuario
         self.current_user = None
-        self.user_service = None
-        
         # Detener timer si existe
         if hasattr(self, 'timer'):
             self.timer.stop()
@@ -479,9 +333,6 @@ class MainWindow(QMainWindow):
         }
         
         if section_name in section_map:
-            # Si cambiamos a la sección de settings, nos aseguramos de mostrar el menú principal
-            if section_map[section_name] == 5:
-                self.settings.show_main_settings()
             self.stacked_widget.setCurrentIndex(section_map[section_name])
     
     def closeEvent(self, event):

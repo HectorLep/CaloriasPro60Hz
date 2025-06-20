@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QComboBox, QGroupBox, QFrame)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPainter, QPen, QBrush
-import random
+
 
 class SimpleChart(QWidget):
     """Widget para mostrar gráficos simples"""

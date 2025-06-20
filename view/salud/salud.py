@@ -1,11 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QFrame, QMessageBox, QGridLayout,
-                             QScrollArea, QSizePolicy)
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QFont, QPalette, QColor, QPainter, QPixmap
-import sqlite3
-from datetime import datetime
-# from View.Agregar_Recordatorio.agregar_recordatorio_pyqt6 import Agregar_Recordatorio
+                             QPushButton, QFrame, QMessageBox, QGridLayout)
+from PyQt6.QtCore import Qt, QTimer
+from view.agregar_recordatorio.agregar_recordatorio import Agregar_Recordatorio
 from model.salud.update_peso import Peso
 from controller.pulsaciones.pulsaciones import Pulsaciones
 from model.salud.calculos import Calculo
@@ -13,16 +9,7 @@ from model.salud.progreso import ProgresoSalud
 from model.salud.GerminiChatWindow import GeminiChatWindow
 from model.util.usuario_manager import UsuarioManager, BaseWidget
 from model.salud.AguaManager import AguaManager
-
-# Colores adaptados a PyQt6
-class Colores:
-    verde_boton = QColor(46, 204, 113)
-    verde_oscuro = QColor(39, 174, 96)
-    azul_medio_oscuro = QColor(52, 73, 94)
-    segundo_label = QColor(149, 165, 166)
-    riesgo_alto = QColor(231, 76, 60)
-    riesgo_medio = QColor(241, 196, 15)
-    riesgo_bajo = QColor(46, 204, 113)
+from model.util.colores import *
 
 class InfoButton(QPushButton):
     """Botón de información personalizado"""
@@ -468,12 +455,22 @@ class Salud(QWidget, BaseWidget):
         except Exception as e:
             self.mostrar_error(f"Error al abrir ventana de pulsaciones: {str(e)}")
 
-
     def abrir_ventana_recordatorio(self):
         """Abre la ventana para agregar recordatorios"""
         try:
-            # Agregar_Recordatorio(self.usuario)
-            self.mostrar_mensaje("Función de recordatorios en desarrollo", "Recordatorios")
+            self.recordatorio_dialog = Agregar_Recordatorio(usuario=self.usuario, parent=self)
+            
+            # Conectar señal opcional para actualizar datos después de agregar recordatorio
+            self.recordatorio_dialog.recordatorio_agregado.connect(
+                lambda: print(f"Nuevo recordatorio agregado para {self.usuario}")
+            )
+            
+            # Mostrar el diálogo
+            result = self.recordatorio_dialog.exec()
+            
+            if result == self.recordatorio_dialog.DialogCode.Accepted:
+                print("Recordatorio agregado exitosamente")
+                
         except Exception as e:
             self.mostrar_error(f"Error al abrir ventana de recordatorios: {str(e)}")
 

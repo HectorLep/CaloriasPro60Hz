@@ -1,11 +1,9 @@
 from google import genai
 from google.genai import types
-from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import QObject, pyqtSignal
 from .calculos import Calculo
 from datetime import datetime
 import sqlite3
-import json
 import re
 import os
 
