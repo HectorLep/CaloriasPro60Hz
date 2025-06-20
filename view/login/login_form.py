@@ -16,7 +16,7 @@ from PyQt6.QtGui import QFont, QPalette, QColor
 
 # Importaciones del modelo
 from model.login.user_validator import UserValidator
-from model.login.auth_service import IAuthService
+from model.login.auth_service import IAuthService  # Solo la interfaz necesaria
 from model.login.user_database import UserDatabase
 
 # Colores definidos localmente (reemplazar con las importaciones reales)
@@ -50,7 +50,7 @@ class LoginForm(IForm, QWidget):
     iniciar_sesion_clicked = pyqtSignal()
     registrarse_clicked = pyqtSignal()
 
-    def __init__(self, ventana_principal, auth_service, on_success):
+    def __init__(self, ventana_principal, auth_service: IAuthService, on_success):
         super().__init__()
         self.ventana_principal = ventana_principal
         self.auth_service = auth_service
@@ -136,7 +136,7 @@ class IniciarSesionForm(IForm, QWidget):
 
     volver_clicked = pyqtSignal()
 
-    def __init__(self, ventana_principal, auth_service, on_success, on_back):
+    def __init__(self, ventana_principal, auth_service: IAuthService, on_success, on_back):
         super().__init__()
         self.ventana_principal = ventana_principal
         self.auth_service = auth_service
@@ -190,10 +190,9 @@ class IniciarSesionForm(IForm, QWidget):
         self.widgets['users_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
         frame_layout.addWidget(self.widgets['users_label'])
         
-        # ComboBox Usuario
+        # ComboBox Usuario - Usar auth_service para obtener usuarios
         self.widgets['users_combobox'] = QComboBox()
-        self.widgets['users_combobox'].addItems(self.auth_service.obtener_usuarios())
-        # ComboBox Usuario (modificar el estilo existente)
+        self._cargar_usuarios()  # Método separado para cargar usuarios
         self.widgets['users_combobox'].setStyleSheet(f"""
             QComboBox {{
                 background-color: {gris_label};
@@ -226,13 +225,37 @@ class IniciarSesionForm(IForm, QWidget):
         
         main_layout.addWidget(self.frame)
     
+    def _cargar_usuarios(self):
+        """Carga los usuarios disponibles usando el auth_service"""
+        try:
+            usuarios = self.auth_service.obtener_usuarios()
+            self.widgets['users_combobox'].clear()
+            self.widgets['users_combobox'].addItems(usuarios)
+            
+            # Si no hay usuarios registrados, mostrar mensaje
+            if not usuarios:
+                self.widgets['users_combobox'].addItem("No hay usuarios registrados")
+                self.widgets['users_combobox'].setEnabled(False)
+            else:
+                self.widgets['users_combobox'].setEnabled(True)
+                
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Error al cargar usuarios: {str(e)}")
+    
     def mostrar(self):
+        # Recargar usuarios cada vez que se muestra el formulario
+        self._cargar_usuarios()
         self.show()
     
     def ocultar(self):
         self.hide()
         
     def _mostrar_campo_contrasena(self):
+        # Verificar si hay usuarios válidos
+        if (self.widgets['users_combobox'].count() == 0 or 
+            self.widgets['users_combobox'].currentText() == "No hay usuarios registrados"):
+            return
+            
         # Limpiar widgets dinámicos
         while self.dynamic_layout.count():
             child = self.dynamic_layout.takeAt(0)
@@ -337,25 +360,41 @@ class IniciarSesionForm(IForm, QWidget):
     def _volver_atras(self):
         self.volver_clicked.emit()
 
-
     def _iniciar_sesion(self):
         usuario = self.widgets['users_combobox'].currentText()
+        
+        # Verificar que hay un usuario válido seleccionado
+        if not usuario or usuario == "No hay usuarios registrados":
+            QMessageBox.warning(self, "Advertencia", "Por favor selecciona un usuario válido.")
+            return
+            
         contrasena = self.widgets['contra_entry'].text()
         
-        if self.auth_service.verificar_credenciales(usuario, contrasena):
-            QMessageBox.information(self, "Éxito", f"Ha iniciado sesión como {usuario}")
-            self.auth_service.guardar_usuario_actual(usuario)
-            self.ocultar()
-            self.on_success()
-        else:
-            QMessageBox.warning(self, "Advertencia", "Contraseña incorrecta.")
+        if not contrasena:
+            QMessageBox.warning(self, "Advertencia", "Por favor ingresa tu contraseña.")
+            return
+        
+        try:
+            # Usar el auth_service para verificar credenciales
+            if self.auth_service.verificar_credenciales(usuario, contrasena):
+                # Usar el auth_service para guardar el usuario actual
+                if self.auth_service.guardar_usuario_actual(usuario):
+                    QMessageBox.information(self, "Éxito", f"Ha iniciado sesión como {usuario}")
+                    self.ocultar()
+                    self.on_success()
+                else:
+                    QMessageBox.warning(self, "Error", "No se pudo guardar la sesión actual.")
+            else:
+                QMessageBox.warning(self, "Advertencia", "Contraseña incorrecta.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al iniciar sesión: {str(e)}")
 
 
 class RegistroForm(IForm, QWidget):
 
     volver_clicked = pyqtSignal()
 
-    def __init__(self, ventana_principal, auth_service, on_success, on_back):
+    def __init__(self, ventana_principal, auth_service: IAuthService, on_success, on_back):
         super().__init__()
         self.ventana_principal = ventana_principal
         self.auth_service = auth_service
@@ -601,7 +640,15 @@ class RegistroForm(IForm, QWidget):
     def _volver_atras(self):
         self.volver_clicked.emit()
 
-    
+    def _verificar_usuario_existente(self, nombre):
+        """Verifica si el usuario ya existe usando el auth_service"""
+        try:
+            usuarios_existentes = self.auth_service.obtener_usuarios()
+            return nombre in usuarios_existentes
+        except Exception as e:
+            print(f"Error al verificar usuario existente: {e}")
+            return True # Asumir que existe para prevenir errores
+
     def _guardar(self):
         # Validar nombre
         nombre = self.widgets['nombre_entry'].text()
@@ -610,8 +657,8 @@ class RegistroForm(IForm, QWidget):
             QMessageBox.warning(self, "Advertencia", msg_nombre)
             return
         
-        # Verificar si el usuario ya existe
-        if nombre in self.auth_service.obtener_usuarios():
+        # Verificar si el usuario ya existe usando auth_service
+        if self._verificar_usuario_existente(nombre):
             QMessageBox.warning(self, "Advertencia", "Este nombre de usuario no está disponible.")
             return
         
@@ -646,18 +693,22 @@ class RegistroForm(IForm, QWidget):
         estatura = resultado_altura
         
         # Validar IMC
-        imc = peso / ((estatura / 100) ** 2)
-        if imc < 10 or imc > 60:
-            reply = QMessageBox.question(
-                self, 
-                "IMC inusual",
-                f"El IMC calculado es {imc:.2f}, lo cual parece poco realista.\n¿Estás seguro de que los datos son correctos?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
-            )
-            if reply == QMessageBox.StandardButton.No:
-                return
-        
+        try:
+            imc = peso / ((estatura / 100) ** 2)
+            if imc < 10 or imc > 60:
+                reply = QMessageBox.question(
+                    self, 
+                    "IMC inusual",
+                    f"El IMC calculado es {imc:.2f}, lo cual parece poco realista.\n¿Estás seguro de que los datos son correctos?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No
+                )
+                if reply == QMessageBox.StandardButton.No:
+                    return
+        except ZeroDivisionError:
+             QMessageBox.warning(self, "Advertencia", "La altura no puede ser cero.")
+             return
+
         # Validar meta de calorías
         valid_meta, resultado_meta = UserValidator.validar_numero(self.widgets['meta_entry'].text(), "meta de calorías")
         if not valid_meta:
@@ -669,6 +720,7 @@ class RegistroForm(IForm, QWidget):
         nivel_actividad = self.widgets['lvl_actividad_combobox'].currentText()
         genero = self.widgets['gen_combobox'].currentText()
         
+        conn = None # Inicializar conn para el bloque finally
         try:
             # Crear base de datos para el usuario
             self.user_database.crear_db_usuario(nombre)
@@ -676,7 +728,7 @@ class RegistroForm(IForm, QWidget):
             # Registrar usuario en el sistema de autenticación
             datos_usuario = {'nombre': nombre, 'contra': contra}
             if not self.auth_service.registrar_usuario(datos_usuario):
-                QMessageBox.warning(self, "Advertencia", "No se pudo registrar el usuario.")
+                QMessageBox.warning(self, "Advertencia", "No se pudo registrar el usuario en el servicio de autenticación.")
                 return
             
             # Guardar datos adicionales en la base de datos del usuario
@@ -704,14 +756,15 @@ class RegistroForm(IForm, QWidget):
             
             conn.commit()
             
-            # Guardar usuario actual
+            # Guardar usuario actual para iniciar sesión automáticamente
             self.auth_service.guardar_usuario_actual(nombre)
             
-            QMessageBox.information(self, "Éxito", "Se ha registrado correctamente")
+            QMessageBox.information(self, "Éxito", "Se ha registrado correctamente.")
+            self.ocultar()
             self.on_success()
             
         except Exception as e:
-            QMessageBox.warning(self, "Advertencia", f"Error al registrarse: {str(e)}")
+            QMessageBox.critical(self, "Error Crítico", f"Error al registrarse: {str(e)}")
         finally:
-            if 'conn' in locals() and conn:
+            if conn:
                 conn.close()

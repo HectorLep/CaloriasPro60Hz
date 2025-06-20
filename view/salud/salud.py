@@ -8,12 +8,12 @@ from datetime import datetime
 
 # Importaciones adaptadas (asumiendo que tienes versiones PyQt6 de estos módulos)
 # from View.Agregar_Recordatorio.agregar_recordatorio_pyqt6 import Agregar_Recordatorio
-# from View.Ventana_interfaz_pyqt6 import New_ventana
-# from Model.Salud.update_peso_pyqt6 import Peso
+from model.salud.update_peso import Peso
 # from Controller.Pulsaciones.Pulsaciones_pyqt6 import Pulsaciones
 from model.salud.calculos import Calculo
 # from Model.Salud.Progreso_pyqt6 import ProgresoSalud
 from model.salud.GerminiChatWindow import GeminiChatWindow
+from model.util.usuario_manager import UsuarioManager, BaseWidget
 from model.salud.AguaManager import AguaManager,VasoAnimado
 
 # Colores adaptados a PyQt6
@@ -81,11 +81,17 @@ class MetricFrame(QFrame):
         self.info_button = InfoButton()
         layout.addWidget(self.info_button, 0, 2)
 
-class Salud(QWidget):
-    """Clase principal del panel de Salud adaptada a PyQt6"""
-    
-    def __init__(self, parent=None, usuario="default_user"):
-        super().__init__(parent)
+class Salud(QWidget, BaseWidget):
+    def __init__(self, parent=None, usuario=None): 
+        QWidget.__init__(self, parent)  # Llama al constructor explícito de QWidget
+        BaseWidget.__init__(self, parent=parent, usuario=usuario)  # Y luego el de BaseWidget
+
+        if not usuario:
+            usuario = UsuarioManager.obtener_usuario_actual()
+
+        if not usuario:
+            self.setup_error_ui("No se ha proporcionado un usuario válido.")
+            return
         self.usuario = usuario
         self.sub = self  # Para mantener compatibilidad con el código original
         self.alerts_shown = False
@@ -97,6 +103,7 @@ class Salud(QWidget):
         self.setup_styles()
         self.actualizar_datos_usuario()
         self.update_health_metrics(show_alerts=False)
+        self.obtener_datos_usuario_bd()
         
         # AGREGAR ESTAS LÍNEAS PARA INICIALIZAR EL AGUA MANAGER
         self.init_agua_manager()
@@ -299,6 +306,33 @@ class Salud(QWidget):
         except:
             self.genero = "masculino"  # valor por defecto
 
+    def obtener_datos_usuario_bd(self):
+        """Obtiene los datos del usuario desde la base de datos"""
+        try:
+            from model.util.base import DBManager
+            conn = DBManager.conectar_principal()
+            
+            # Adaptar esta query según tu estructura de base de datos de usuarios
+            query = "SELECT genero, altura, edad FROM usuarios WHERE usuario = ?"
+            resultado = DBManager.ejecutar_query(conn, query, (self.usuario,))
+            
+            if resultado:
+                genero, altura, edad = resultado
+                self.genero = genero
+                self.altura = altura / 100 if altura > 10 else altura  # Convertir cm a m si es necesario
+                self.edad = edad
+                return True
+            else:
+                print(f"No se encontraron datos para el usuario: {self.usuario}")
+                return False
+                
+        except Exception as e:
+            print(f"Error al obtener datos del usuario: {e}")
+            return False
+        finally:
+            if conn:
+                DBManager.cerrar_conexion(conn)
+
     def mostrar_mensaje_bienvenida(self):
         """Muestra mensaje de bienvenida"""
         QTimer.singleShot(1000, lambda: self.mostrar_mensaje(
@@ -402,15 +436,27 @@ class Salud(QWidget):
     def actualizar_peso(self):
         """Abre la ventana para actualizar peso"""
         def update_and_refresh():
+            """Callback que se ejecuta después de actualizar el peso"""
             self.update_health_metrics(show_alerts=True)
-            # Actualizar otros componentes aquí
+            print("Métricas de salud actualizadas después de cambio de peso")
         
         try:
-            # Peso(self.sub, self.usuario, callback=update_and_refresh)
-            self.mostrar_mensaje("Función de actualización de peso en desarrollo", "Actualizar Peso")
+            # Crear y mostrar la ventana de actualización de peso
+            peso_dialog = Peso(parent=self, usuario=self.usuario, callback=update_and_refresh)
+            
+            # Conectar la señal peso_actualizado para actualizar métricas
+            peso_dialog.peso_actualizado.connect(lambda: self.update_health_metrics(show_alerts=True))
+            
+            # Ejecutar el diálogo
+            result = peso_dialog.exec()
+            
+            if result == peso_dialog.DialogCode.Accepted:
+                print("Peso actualizado exitosamente")
+            
         except Exception as e:
             self.mostrar_error(f"Error al abrir ventana de actualización de peso: {str(e)}")
-
+            print(f"Error detallado: {e}")
+                        
     def pulsaciones(self):
         """Abre la ventana para medir pulsaciones"""
         try:
@@ -500,39 +546,82 @@ class Salud(QWidget):
         msg_box.exec()
 
     def calcular_imc(self):
-        """Calcula el IMC del usuario (versión simplificada)"""
+        """Calcula el IMC del usuario usando datos reales de la base de datos"""
         try:
-            # Aquí iría tu lógica de base de datos
-            # return Calculo.calcular_imc(self.usuario)
-            
-            # Valores de ejemplo para demostración
-            peso = 70.0  # kg
-            altura = 1.75  # metros
-            return peso / (altura ** 2)
+            # Obtener peso actual de la base de datos
+            conn = None
+            try:
+                from model.util.base import DBManager
+                conn = DBManager.conectar_usuario(self.usuario)
+                
+                # Obtener el último peso registrado
+                query_peso = "SELECT peso FROM peso ORDER BY num DESC LIMIT 1"
+                resultado_peso = DBManager.ejecutar_query(conn, query_peso)
+                
+                if not resultado_peso:
+                    print("No hay peso registrado")
+                    return None
+                
+                peso = float(resultado_peso[0])
+                
+                # Obtener altura del perfil del usuario
+                # Aquí necesitarías adaptar según tu estructura de base de datos
+                # Por ahora uso un valor por defecto, pero deberías obtenerlo de la BD
+                altura = 1.75  # metros - CAMBIAR POR QUERY A TU TABLA DE USUARIOS
+                
+                # Calcular IMC
+                imc = peso / (altura ** 2)
+                return imc
+                
+            finally:
+                if conn:
+                    DBManager.cerrar_conexion(conn)
+                
         except Exception as e:
             print(f"Error al calcular IMC: {e}")
             return None
 
+
     def calcular_TMB(self):
-        """Calcula la TMB del usuario (versión simplificada)"""
+        """Calcula la TMB del usuario usando datos reales de la base de datos"""
         try:
-            # Aquí iría tu lógica de base de datos
-            # return Calculo.calcular_TMB(self.usuario)
-            
-            # Fórmula Harris-Benedict simplificada para demostración
-            peso = 70.0  # kg
-            altura = 175  # cm
-            edad = 30
-            
-            if self.genero.lower() == "masculino":
-                tmb = 88.362 + (13.397 * peso) + (4.799 * altura) - (5.677 * edad)
-            else:
-                tmb = 447.593 + (9.247 * peso) + (3.098 * altura) - (4.330 * edad)
-            
-            return tmb
+            # Obtener datos del usuario de la base de datos
+            conn = None
+            try:
+                from model.util.base import DBManager
+                conn = DBManager.conectar_usuario(self.usuario)
+                
+                # Obtener el último peso registrado
+                query_peso = "SELECT peso FROM peso ORDER BY num DESC LIMIT 1"
+                resultado_peso = DBManager.ejecutar_query(conn, query_peso)
+                
+                if not resultado_peso:
+                    print("No hay peso registrado")
+                    return None
+                
+                peso = float(resultado_peso[0])
+                
+                # Obtener otros datos del perfil del usuario
+                # Estos valores deberían venir de tu tabla de usuarios/perfil
+                altura = 175  # cm - CAMBIAR POR QUERY A TU TABLA DE USUARIOS
+                edad = 30     # años - CAMBIAR POR QUERY A TU TABLA DE USUARIOS
+                
+                # Fórmula Harris-Benedict
+                if self.genero.lower() == "masculino":
+                    tmb = 88.362 + (13.397 * peso) + (4.799 * altura) - (5.677 * edad)
+                else:
+                    tmb = 447.593 + (9.247 * peso) + (3.098 * altura) - (4.330 * edad)
+                
+                return tmb
+                
+            finally:
+                if conn:
+                    DBManager.cerrar_conexion(conn)
+                
         except Exception as e:
             print(f"Error al calcular TMB: {e}")
             return None
+
 
     def evaluar_imc_simple(self, imc):
         """Evaluación simple del IMC"""
