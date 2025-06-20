@@ -5,16 +5,14 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont, QPalette, QColor, QPainter, QPixmap
 import sqlite3
 from datetime import datetime
-
-# Importaciones adaptadas (asumiendo que tienes versiones PyQt6 de estos módulos)
 # from View.Agregar_Recordatorio.agregar_recordatorio_pyqt6 import Agregar_Recordatorio
 from model.salud.update_peso import Peso
-# from Controller.Pulsaciones.Pulsaciones_pyqt6 import Pulsaciones
+from controller.pulsaciones.pulsaciones import Pulsaciones
 from model.salud.calculos import Calculo
-# from Model.Salud.Progreso_pyqt6 import ProgresoSalud
+from model.salud.progreso import ProgresoSalud
 from model.salud.GerminiChatWindow import GeminiChatWindow
 from model.util.usuario_manager import UsuarioManager, BaseWidget
-from model.salud.AguaManager import AguaManager,VasoAnimado
+from model.salud.AguaManager import AguaManager
 
 # Colores adaptados a PyQt6
 class Colores:
@@ -96,7 +94,6 @@ class Salud(QWidget, BaseWidget):
         self.sub = self  # Para mantener compatibilidad con el código original
         self.alerts_shown = False
         
-        # Simulación de datos del usuario (reemplazar con tu lógica de base de datos)
         self.genero = "masculino"
         
         self.init_ui()
@@ -104,6 +101,7 @@ class Salud(QWidget, BaseWidget):
         self.actualizar_datos_usuario()
         self.update_health_metrics(show_alerts=False)
         self.obtener_datos_usuario_bd()
+        self.progreso_salud = ProgresoSalud(self.frame_graficos, self.usuario)
         
         # AGREGAR ESTAS LÍNEAS PARA INICIALIZAR EL AGUA MANAGER
         self.init_agua_manager()
@@ -115,6 +113,9 @@ class Salud(QWidget, BaseWidget):
         """Inicializa el gestor de agua"""
         try:
             self.agua_manager = AguaManager(self.usuario)
+            # Calcular agua recomendada basada en el peso del usuario
+            vasos_recomendados = Calculo.calcular_agua_recomendada(self.usuario)
+            print(f"Vasos de agua recomendados para {self.usuario}: {vasos_recomendados}")
             # Conectar la señal para actualizar estadísticas cuando cambie el consumo de agua
             self.agua_manager.agua_actualizada.connect(self.on_agua_actualizada)
             self.agua_manager.vasitos_mostrados()
@@ -300,9 +301,7 @@ class Salud(QWidget, BaseWidget):
     def actualizar_datos_usuario(self):
         """Obtiene los datos básicos del usuario de la base de datos"""
         try:
-            # Aquí iría tu lógica de base de datos
-            # self.genero = Calculo.get_user_gender(self.usuario)
-            pass
+            self.genero = Calculo.get_user_gender(self.usuario)
         except:
             self.genero = "masculino"  # valor por defecto
 
@@ -438,6 +437,8 @@ class Salud(QWidget, BaseWidget):
         def update_and_refresh():
             """Callback que se ejecuta después de actualizar el peso"""
             self.update_health_metrics(show_alerts=True)
+            if hasattr(self, 'progreso_salud'):
+                        self.progreso_salud.refrescar()
             print("Métricas de salud actualizadas después de cambio de peso")
         
         try:
@@ -445,8 +446,10 @@ class Salud(QWidget, BaseWidget):
             peso_dialog = Peso(parent=self, usuario=self.usuario, callback=update_and_refresh)
             
             # Conectar la señal peso_actualizado para actualizar métricas
-            peso_dialog.peso_actualizado.connect(lambda: self.update_health_metrics(show_alerts=True))
-            
+            peso_dialog.peso_actualizado.connect(lambda: [
+                self.update_health_metrics(show_alerts=True),
+                self.progreso_salud.refrescar() if hasattr(self, 'progreso_salud') else None
+            ])            
             # Ejecutar el diálogo
             result = peso_dialog.exec()
             
@@ -460,10 +463,11 @@ class Salud(QWidget, BaseWidget):
     def pulsaciones(self):
         """Abre la ventana para medir pulsaciones"""
         try:
-            # Pulsaciones(self.sub)
-            self.mostrar_mensaje("Función de medición de pulsaciones en desarrollo", "Pulsaciones")
+            self.pulso_dialog = Pulsaciones(parent=self)
+            self.pulso_dialog.show()
         except Exception as e:
             self.mostrar_error(f"Error al abrir ventana de pulsaciones: {str(e)}")
+
 
     def abrir_ventana_recordatorio(self):
         """Abre la ventana para agregar recordatorios"""
@@ -547,136 +551,19 @@ class Salud(QWidget, BaseWidget):
 
     def calcular_imc(self):
         """Calcula el IMC del usuario usando datos reales de la base de datos"""
-        try:
-            # Obtener peso actual de la base de datos
-            conn = None
-            try:
-                from model.util.base import DBManager
-                conn = DBManager.conectar_usuario(self.usuario)
-                
-                # Obtener el último peso registrado
-                query_peso = "SELECT peso FROM peso ORDER BY num DESC LIMIT 1"
-                resultado_peso = DBManager.ejecutar_query(conn, query_peso)
-                
-                if not resultado_peso:
-                    print("No hay peso registrado")
-                    return None
-                
-                peso = float(resultado_peso[0])
-                
-                # Obtener altura del perfil del usuario
-                # Aquí necesitarías adaptar según tu estructura de base de datos
-                # Por ahora uso un valor por defecto, pero deberías obtenerlo de la BD
-                altura = 1.75  # metros - CAMBIAR POR QUERY A TU TABLA DE USUARIOS
-                
-                # Calcular IMC
-                imc = peso / (altura ** 2)
-                return imc
-                
-            finally:
-                if conn:
-                    DBManager.cerrar_conexion(conn)
-                
-        except Exception as e:
-            print(f"Error al calcular IMC: {e}")
-            return None
-
+        return Calculo.calcular_imc(self.usuario)
 
     def calcular_TMB(self):
         """Calcula la TMB del usuario usando datos reales de la base de datos"""
-        try:
-            # Obtener datos del usuario de la base de datos
-            conn = None
-            try:
-                from model.util.base import DBManager
-                conn = DBManager.conectar_usuario(self.usuario)
-                
-                # Obtener el último peso registrado
-                query_peso = "SELECT peso FROM peso ORDER BY num DESC LIMIT 1"
-                resultado_peso = DBManager.ejecutar_query(conn, query_peso)
-                
-                if not resultado_peso:
-                    print("No hay peso registrado")
-                    return None
-                
-                peso = float(resultado_peso[0])
-                
-                # Obtener otros datos del perfil del usuario
-                # Estos valores deberían venir de tu tabla de usuarios/perfil
-                altura = 175  # cm - CAMBIAR POR QUERY A TU TABLA DE USUARIOS
-                edad = 30     # años - CAMBIAR POR QUERY A TU TABLA DE USUARIOS
-                
-                # Fórmula Harris-Benedict
-                if self.genero.lower() == "masculino":
-                    tmb = 88.362 + (13.397 * peso) + (4.799 * altura) - (5.677 * edad)
-                else:
-                    tmb = 447.593 + (9.247 * peso) + (3.098 * altura) - (4.330 * edad)
-                
-                return tmb
-                
-            finally:
-                if conn:
-                    DBManager.cerrar_conexion(conn)
-                
-        except Exception as e:
-            print(f"Error al calcular TMB: {e}")
-            return None
+        return Calculo.calcular_TMB(self.usuario)
 
 
     def evaluar_imc_simple(self, imc):
         """Evaluación simple del IMC"""
-        if imc < 16:
-            return "Delgadez severa"
-        elif imc < 17:
-            return "Delgadez moderada"
-        elif imc < 18.5:
-            return "Delgadez leve"
-        elif imc < 25:
-            return "Peso normal"
-        elif imc < 30:
-            return "Sobrepeso"
-        elif imc < 35:
-            return "Obesidad grado I"
-        elif imc < 40:
-            return "Obesidad grado II"
-        else:
-            return "Obesidad grado III"
+        categoria, _ = Calculo.evaluar_imc(imc)
+        return categoria
 
     def evaluar_tmb_simple(self, tmb):
         """Evaluación simple de la TMB"""
-        if tmb < 1000:
-            return "TMB muy baja"
-        elif tmb < 1200:
-            return "TMB baja"
-        elif tmb < 1600:
-            return "TMB normal-baja"
-        elif tmb < 2000:
-            return "TMB normal"
-        elif tmb < 2500:
-            return "TMB normal-alta"
-        else:
-            return "TMB alta"
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    from PyQt6.QtWidgets import QApplication
-    import sys
-    
-    app = QApplication(sys.argv)
-    app.setStyle('Fusion')  # Estilo moderno
-    
-    # Aplicar tema oscuro
-    app.setStyleSheet("""
-        QWidget {
-            background-color: #2C3E50;
-            color: white;
-        }
-        QMessageBox {
-            background-color: #34495E;
-        }
-    """)
-    
-    window = Salud(usuario="test_user")
-    window.show()
-    
-    sys.exit(app.exec())
+        categoria, _ = Calculo.evaluar_TMB(tmb, self.genero)
+        return categoria

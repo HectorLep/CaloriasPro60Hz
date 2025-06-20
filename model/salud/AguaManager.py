@@ -3,21 +3,13 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont, QPalette, QColor, QPainter, QPixmap, QImage, QPen
 from .calculos import Calculo
+from model.util.colores import *
 import sqlite3
 from datetime import datetime
 import numpy as np
 from PIL import Image
 import sys
 import os
-
-# Colores adaptados
-class Colores:
-    verde_boton = QColor(46, 204, 113)
-    verde_oscuro = QColor(39, 174, 96)
-    azul_medio_oscuro = QColor(52, 73, 94)
-    riesgo_alto = QColor(231, 76, 60)
-    riesgo_medio = QColor(241, 196, 15)
-    riesgo_bajo = QColor(46, 204, 113)
 
 class VasoAnimado(QWidget):
     """Widget que dibuja y anima un vaso de agua"""

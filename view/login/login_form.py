@@ -13,23 +13,10 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QSizePolicy)
 from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QFont, QPalette, QColor
-
-# Importaciones del modelo
 from model.login.user_validator import UserValidator
-from model.login.auth_service import IAuthService  # Solo la interfaz necesaria
+from model.login.auth_service import IAuthService 
 from model.login.user_database import UserDatabase
-
-# Colores definidos localmente (reemplazar con las importaciones reales)
-gris = "#404040"
-azul_medio_oscuro = "#2c3e50"
-verde_boton = "#27ae60"
-verde_oscuro = "#1e8449"
-negro_texto = "#2c3e50"
-gris_label = "#ecf0f1"
-color_entry = "#ffffff"
-riesgo_medio = "#f39c12"
-riesgo_alto = "#e74c3c"
-
+from model.util.colores import *
 
 class IForm: 
     def mostrar(self):
