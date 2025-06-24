@@ -87,7 +87,7 @@ class UserDatabase(IUserDatabase):
             
             for tabla in tablas.values():
                 cursor.execute(tabla)
-                
+            cursor.execute("INSERT INTO mensajes DEFAULT VALUES")
             conn.commit()
             return True
         except Exception as e:

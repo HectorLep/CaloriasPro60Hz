@@ -10,6 +10,7 @@ from model.salud.GerminiChatWindow import GeminiChatWindow
 from model.util.usuario_manager import UsuarioManager, BaseWidget
 from model.salud.AguaManager import AguaManager
 from model.util.colores import *
+from model.util.mensajes import *
 
 class InfoButton(QPushButton):
     """Botón de información personalizado"""
@@ -92,9 +93,6 @@ class Salud(QWidget, BaseWidget):
         
         # AGREGAR ESTAS LÍNEAS PARA INICIALIZAR EL AGUA MANAGER
         self.init_agua_manager()
-        
-        self.mostrar_mensaje_bienvenida()
-
 
     def init_agua_manager(self):
         """Inicializa el gestor de agua"""
@@ -320,11 +318,12 @@ class Salud(QWidget, BaseWidget):
                 DBManager.cerrar_conexion(conn)
 
     def mostrar_mensaje_bienvenida(self):
-        """Muestra mensaje de bienvenida"""
-        QTimer.singleShot(1000, lambda: self.mostrar_mensaje(
-            "Esta es la pestaña de Salud, aquí podrás gestionar tu peso actual, "
-            "medir tus pulsaciones, ver tu IMC (índice de masa corporal) al igual "
-            "que tu TMB (tasa metabólica basal)", "Salud"))
+            """Muestra mensaje de bienvenida desde el archivo central"""
+            info = MENSAJES.get("salud", {})
+            titulo = info.get("titulo", "Salud")
+            mensaje = info.get("mensaje_html", "Bienvenido a la sección de salud.")
+            
+            QTimer.singleShot(1000, lambda: self.mostrar_mensaje(mensaje, titulo))
 
     def mostrar_mensaje(self, mensaje, titulo):
         """Muestra un mensaje informativo"""

@@ -16,6 +16,7 @@ import sys
 import tempfile
 import time
 from model.util.colores import *
+from model.util.mensajes import *
 
 class InfoButton(QPushButton):
     """Botón de información personalizado"""
@@ -215,7 +216,6 @@ class ConfigUI(QWidget, BaseWidget):
         
         self.init_ui()
         self.setup_styles()
-        self.mostrar_mensaje_inicial()
 
     def get_current_user(self):
         """Obtiene el usuario actual"""
@@ -435,11 +435,13 @@ class ConfigUI(QWidget, BaseWidget):
         """)
 
     def mostrar_mensaje_inicial(self):
-        """Muestra mensaje inicial"""
-        QTimer.singleShot(1000, lambda: self.mostrar_mensaje(
-            "Esta es la pestaña de configuracion, dentro podras configurar todo lo que es tu perfil como el objetivo de calorias y el nivel de actividad",
-            "Configuracion"
-        ))
+            """Muestra mensaje inicial desde el archivo central"""
+            info = MENSAJES.get("configuracion", {})
+            titulo = info.get("titulo", "Configuración")
+            mensaje = info.get("mensaje_html", "Bienvenido a la configuración.")
+            
+            QTimer.singleShot(1000, lambda: self.mostrar_mensaje(mensaje, titulo))
+            
 
     def mostrar_mensaje(self, mensaje, titulo):
         """Muestra un mensaje informativo"""

@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QMessageBox)
 from PyQt6.QtCore import Qt, QTimer
 from model.util.colores import *
+from model.util.mensajes import *
 from model.agregar_alimento.alimento_factory import SqliteAlimentoFactory
 
 
@@ -366,8 +367,7 @@ class Agregar_Alimento(QWidget):
         
         self._inicializar_dependencias()
         self._crear_vista()
-        self._mostrar_mensaje_bienvenida()
-    
+
     def _get_current_user(self):
         """Obtiene el usuario actual"""
         try:
@@ -405,13 +405,15 @@ class Agregar_Alimento(QWidget):
             on_agregar_callback=self._manejar_agregar_alimento,
             on_ayuda_callback=self._mostrar_ayuda
         )
-    
+        
     def _mostrar_mensaje_bienvenida(self):
-        """Muestra el mensaje de bienvenida"""
-        mensaje = ("Esta es la pestaña de agregar alimento, para agregar un alimento "
-                  "debes insertar el nombre del alimento, las calorías por porción o por 100 gramos")
-        QTimer.singleShot(1000, lambda: self._mostrar_mensaje(mensaje, "Agregar Alimento"))
-    
+            """Muestra el mensaje de bienvenida desde el archivo central."""
+            info = MENSAJES.get("agregar_alimento", {})
+            titulo = info.get("titulo", "Agregar Alimento")
+            mensaje = info.get("mensaje_html", "Bienvenido a agregar alimentos.")
+            
+            QTimer.singleShot(1000, lambda: self._mostrar_mensaje(mensaje, titulo))
+                
     def _manejar_agregar_alimento(self):
         """Maneja la lógica de agregar un alimento (SRP - una sola responsabilidad)"""
         datos = self.vista.obtener_datos_formulario()

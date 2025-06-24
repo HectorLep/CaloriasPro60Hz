@@ -8,6 +8,7 @@ from view.historial.historial_view import HistorialView
 from model.agregar_alimento import *
 from controller.historial.historial_controller import HistorialController
 from model.util.colores import *
+from model.util.mensajes import *
 
 class ModernStatusBar(QFrame):
     """Barra de estado moderna con indicadores"""
@@ -85,44 +86,16 @@ class ModernStatusBar(QFrame):
 
 class WelcomeDialog(QMessageBox):
     """Diálogo de bienvenida moderno y atractivo"""
-    def __init__(self, parent=None):
+    def __init__(self, titulo, mensaje_html, parent=None): # Editado
         super().__init__(parent)
-        self.setup_ui()
+        self.setup_ui(titulo, mensaje_html) # Editado
         
-    def setup_ui(self):
-        self.setWindowTitle("🎉 Bienvenido al Historial")
+    def setup_ui(self, titulo, mensaje_html): # Editado
+        self.setWindowTitle(titulo) # Editado
         self.setIcon(QMessageBox.Icon.Information)
         
-        # Mensaje principal con HTML styling
-        message = """
-        <div style='text-align: center; padding: 20px;'>
-            <h2 style='color: #4CAF50; margin-bottom: 20px;'>
-                📊 ¡Bienvenido al Historial de Consumo!
-            </h2>
-            
-            <p style='font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 15px;'>
-                Aquí podrás explorar y analizar todo tu historial alimentario de manera intuitiva y detallada.
-            </p>
-            
-            <div style='background: linear-gradient(135deg, #e8f5e8, #f1f8e9); 
-                        padding: 15px; border-radius: 10px; margin: 15px 0;'>
-                <h3 style='color: #2e7d32; margin-bottom: 10px;'>🚀 Funciones Principales:</h3>
-                <ul style='text-align: left; color: #424242; line-height: 1.8;'>
-                    <li><b>🔍 Búsqueda Avanzada:</b> Encuentra alimentos específicos</li>
-                    <li><b>📅 Filtros de Fecha:</b> Analiza períodos específicos</li>
-                    <li><b>📊 Estadísticas en Tiempo Real:</b> Ve tus métricas al instante</li>
-                    <li><b>📁 Exportación CSV:</b> Lleva tus datos donde necesites</li>
-                    <li><b>🎨 Interfaz Moderna:</b> Diseño intuitivo y atractivo</li>
-                </ul>
-            </div>
-            
-            <p style='font-size: 14px; color: #666; font-style: italic;'>
-                💡 Tip: Usa el botón de ayuda (❓) en cualquier momento para obtener más información
-            </p>
-        </div>
-        """
-        
-        self.setText(message)
+        # Ya no se usa la variable 'message' hardcodeada, se usa el parámetro
+        self.setText(mensaje_html) # Editado
         
         # Estilo personalizado
         self.setStyleSheet("""
@@ -224,9 +197,6 @@ class Historial(QWidget):
         self.setup_connections()
         self.apply_modern_styling()
         
-        # Mostrar bienvenida con delay para mejor UX
-        QTimer.singleShot(300, self.show_welcome_message)
-
     def setup_ui(self):
         """Configura la interfaz de usuario moderna"""
         self.setObjectName('historial')
@@ -336,15 +306,17 @@ class Historial(QWidget):
         self.setGraphicsEffect(shadow_effect)
 
     def show_welcome_message(self):
-        """Mostrar mensaje de bienvenida mejorado"""
+        """Mostrar mensaje de bienvenida mejorado desde el archivo central."""
         try:
-            welcome_dialog = WelcomeDialog(self)
+            info = MENSAJES.get("historial", {})
+            titulo = info.get("titulo", "Bienvenido")
+            mensaje_html = info.get("mensaje_html", "<p>Error al cargar mensaje.</p>")
+            
+            # Pasamos el título y el mensaje al crearlo
+            welcome_dialog = WelcomeDialog(titulo, mensaje_html, self)
             welcome_dialog.exec()
             
-            # Actualizar estado después de la bienvenida
             self.status_bar.update_status("¡Listo para usar!", "🎉")
-            
-            # Simular carga inicial de datos
             self.cargar_datos_inicial()
             
         except Exception as e:

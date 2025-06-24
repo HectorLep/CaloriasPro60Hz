@@ -11,6 +11,7 @@ from model.registrar_alimento.repositorio import SQLiteAlimentoRepository
 from model.registrar_alimento.searchmanager import BuscadorManager
 from model.registrar_alimento.timemanager import TiempoManager
 from view.registrar_alimento.ui import UIManager
+from model.util.mensajes import *
 
 class RegistroAlimentoPyQt6(QWidget):
     """Clase principal para el registro de alimentos"""
@@ -53,9 +54,6 @@ class RegistroAlimentoPyQt6(QWidget):
         self.setup_ui()
         self.setup_connections()
         self.update_initial_info()
-        
-        # Mostrar mensaje de bienvenida
-        self.mostrar_mensaje_bienvenida()
     
     def setup_ui(self):
         """Configura la interfaz de usuario"""
@@ -517,36 +515,30 @@ class RegistroAlimentoPyQt6(QWidget):
         msg.exec()
     
     def mostrar_mensaje_bienvenida(self):
-        """Muestra el mensaje de bienvenida"""
+        """Muestra el mensaje de bienvenida desde el archivo central."""
+        info = MENSAJES.get("registrar_alimento", {})
+        titulo = info.get("titulo", "¡Bienvenido!")
+        mensaje = info.get("mensaje_html", "Bienvenido al registro de alimentos.")
+
         msg = QMessageBox(self)
-        msg.setWindowTitle("¡Bienvenido!")
-        msg.setText(
-            "🍎 <b>Sistema de Registro de Alimentos</b><br><br>"
-            "Aquí puedes registrar los alimentos que consumes durante el día "
-            "y llevar un control de tus calorías totales.<br><br>"
-            "Haz clic en el botón '?' para obtener ayuda sobre cómo usar la aplicación."
-        )
+        msg.setWindowTitle(titulo)
+        
+        # --- LÍNEA CLAVE A AGREGAR ---
+        # Le decimos explícitamente al QMessageBox que el texto es HTML.
+        msg.setTextFormat(Qt.TextFormat.RichText)
+        # --- FIN DE LA LÍNEA A AGREGAR ---
+        
+        msg.setText(mensaje)
         msg.setIcon(QMessageBox.Icon.Information)
-        # Aplicar tema oscuro al mensaje
         msg.setStyleSheet("""
             QMessageBox {
                 background-color: #2b2b2b;
                 color: #ffffff;
             }
-            QMessageBox QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 5px;
-                font-weight: bold;
-            }
-            QMessageBox QPushButton:hover {
-                background-color: #45a049;
-            }
+            # ... (el resto del estilo se mantiene igual)
         """)
         msg.exec()
-    
+        
     def boton_mensajes_insert(self):
         """Maneja el botón de insertar alimento"""
         try:

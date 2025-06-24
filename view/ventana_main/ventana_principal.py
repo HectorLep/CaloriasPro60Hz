@@ -3,14 +3,12 @@
 """
 Ventana principal del Contador de Calorías con Login integrado
 """
-
-import os
+import sqlite3
 from datetime import datetime
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QLabel, QPushButton, QFrame, QStackedWidget, 
-                             QInputDialog, QLineEdit)
+                             QLabel, QFrame, QStackedWidget)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QPixmap, QFont, QIcon
+from PyQt6.QtGui import QFont
 from ..sidebar import Sidebar
 from .welcome_screen import WelcomeScreen
 from ..grafico import Grafico
@@ -20,6 +18,7 @@ from controller.configuracion.configuracion import ConfigUI
 from view.login.login_form import LoginForm, IniciarSesionForm, RegistroForm
 from model.login.auth_service import AuthService
 from model.login.user_database import UserDatabase
+from model.util.base import DBManager
 from view.agregar_alimento.agregar_alimento import Agregar_Alimento
 from controller.registrar_alimento.registrar_alimento import RegistroAlimentoPyQt6
 from controller.historial.historial import Historial
@@ -114,22 +113,66 @@ class LoginScreen(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        
-        # --- Variables de estado ---
         self.current_user = None
         self.is_logged_in = False
-        
-        # --- Stack principal para manejar login/main ---
+        self.welcome_message_flags = {} # Caché en memoria para evitar lecturas repetidas de la BD
         self.main_stack = QStackedWidget()
         self.setCentralWidget(self.main_stack)
         
-        # --- Inicializar interfaces ---
+        # Inicializar interfaces    
         self.init_login()
         self.init_main_ui()
         
         # Mostrar login inicialmente
         self.show_login()
-        
+
+    def check_message_status(self, section_name):
+        """Verifica en la BD del USUARIO si el mensaje para una sección ya se mostró."""
+        conn = None
+        if not self.current_user:
+            return 0 # Si no hay un usuario logueado, no se puede verificar.
+
+        try:
+            # --- CAMBIO CLAVE ---
+            # Conectamos a la base de datos del usuario actual, no a la principal.
+            # Es posible que tu método se llame diferente (ej: conectar_bd_usuario).
+            # Asegúrate de que el nombre del método sea el correcto.
+            conn = DBManager.conectar_usuario(self.current_user) 
+            
+            query = f"SELECT {section_name} FROM mensajes LIMIT 1"
+            resultado = DBManager.ejecutar_query(conn, query)
+            
+            if resultado and resultado[0] is not None:
+                return resultado[0]
+            return 0
+        except sqlite3.Error as e:
+            # Este error puede ocurrir si la tabla 'mensajes' aún no existe para un usuario.
+            print(f"NOTA: No se pudo verificar el estado del mensaje para '{section_name}'. Error: {e}")
+            return 0 # Fallamos de forma segura, asumiendo que el mensaje no se ha mostrado.
+        finally:
+            if conn:
+                DBManager.cerrar_conexion(conn)
+
+    def update_message_status(self, section_name):
+        """Actualiza en la BD del USUARIO el estado de un mensaje a 'mostrado' (1)."""
+        conn = None
+        if not self.current_user:
+            return # Si no hay un usuario logueado, no se puede actualizar.
+
+        try:
+            # --- CAMBIO CLAVE ---
+            # De nuevo, nos aseguramos de conectar a la base de datos del usuario.
+            conn = DBManager.conectar_usuario(self.current_user) 
+            
+            query = f"UPDATE mensajes SET {section_name} = 1"
+            DBManager.ejecutar_query(conn, query, commit=True)
+        except sqlite3.Error as e:
+            print(f"Error al actualizar estado del mensaje para '{section_name}': {e}")
+        finally:
+            if conn:
+                DBManager.cerrar_conexion(conn)
+                
+
     def init_login(self):
         """Inicializar la pantalla de login"""
         self.login_screen = LoginScreen(self)
@@ -328,24 +371,73 @@ class MainWindow(QMainWindow):
         self.show_login()
     
     def change_section(self, section_name):
-        """Cambiar de sección en la interfaz principal"""
-        if not self.is_logged_in:
-            return
+            """Cambiar de sección y mostrar mensaje de bienvenida una sola vez."""
+            if not self.is_logged_in:
+                return
+                
+            # Diccionario que mapea nombres de sección a sus widgets, métodos y columnas de BD
+            section_details = {
+                "salud": {
+                    "widget": self.salud, 
+                    "welcome_method": "mostrar_mensaje_bienvenida",
+                    "db_column": "salud"
+                },
+                "historial": {
+                    "widget": self.historial, 
+                    "welcome_method": "show_welcome_message",
+                    "db_column": "historial"
+                },
+                "registrar": {
+                    "widget": self.registrar_alimento, 
+                    "welcome_method": "mostrar_mensaje_bienvenida",
+                    "db_column": "registrar_alimento"
+                },
+                # --- INICIO DE LÍNEAS A AGREGAR ---
+                "settings": {
+                    "widget": self.settings,
+                    "welcome_method": "mostrar_mensaje_inicial",
+                    "db_column": "configuracion"  # Nombre de la columna en la BD
+                },
+                "agregar": {
+                    "widget": self.agregar_alimento,
+                    "welcome_method": "_mostrar_mensaje_bienvenida",
+                    "db_column": "agregar_alimento"  # Nombre de la columna en la BD
+                }
+                # --- FIN DE LÍNEAS A AGREGAR ---
+            }
+
+            if section_name in section_details:
+                details = section_details[section_name]
+                db_column_name = details["db_column"]
+
+                # 1. Revisar caché en memoria primero
+                if db_column_name not in self.welcome_message_flags:
+                    # 2. Si no está en caché, consultar la base de datos
+                    status = self.check_message_status(db_column_name)
+                    self.welcome_message_flags[db_column_name] = status
+
+                # 3. Si el estado es 0 (no mostrado), mostrar el mensaje
+                if self.welcome_message_flags[db_column_name] == 0:
+                    widget = details["widget"]
+                    method_name = details["welcome_method"]
+                    
+                    if hasattr(widget, method_name):
+                        welcome_method = getattr(widget, method_name)
+                        welcome_method()
+                    
+                    # 4. Actualizar la base de datos y el caché
+                    self.update_message_status(db_column_name)
+                    self.welcome_message_flags[db_column_name] = 1
+
+            # --- Lógica original para cambiar de vista ---
+            section_map = {
+                "welcome": 0, "registrar": 1, "agregar": 2, "grafico": 3,
+                "historial": 4, "settings": 5, "salud": 6, "menu": 7
+            }
             
-        section_map = {
-            "welcome": 0,
-            "registrar": 1,
-            "agregar": 2,
-            "grafico": 3,
-            "historial": 4,
-            "settings": 5,
-            "salud": 6,
-            "menu": 7
-        }
-        
-        if section_name in section_map:
-            self.stacked_widget.setCurrentIndex(section_map[section_name])
-    
+            if section_name in section_map:
+                self.stacked_widget.setCurrentIndex(section_map[section_name])
+                                                    
     def closeEvent(self, event):
         """Manejar el cierre de la aplicación"""
         if hasattr(self, 'timer'):
