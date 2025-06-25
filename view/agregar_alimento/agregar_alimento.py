@@ -7,6 +7,8 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from model.util.colores import *
 from model.util.mensajes import *
 from model.agregar_alimento.alimento_factory import SqliteAlimentoFactory
+from model.agregar_alimento.alimento_factory import ApiAlimentoFactory 
+from model.agregar_alimento.repositorio_api import ApiAlimentoRepository
 
 
 class CustomButton(QPushButton):
@@ -295,7 +297,7 @@ class Agregar_Alimento(QWidget):
     
     def _inicializar_dependencias(self):
         """Inicializa dependencias usando Factory Method puro"""
-        self.factory = SqliteAlimentoFactory()
+        self.factory = ApiAlimentoFactory() 
         self.alimento_service = self.factory.crear_alimento_service(self.usuario)
         self.notification_service = self.factory.crear_notification_service()
         
@@ -341,16 +343,13 @@ class Agregar_Alimento(QWidget):
                 
 
     def _manejar_agregar_alimento(self):
-        """Maneja la lógica de agregar un alimento (SRP - una sola responsabilidad)"""
+        """Maneja la lógica de 'agregar' (ahora verificar) un alimento"""
         datos = self.vista.obtener_datos_formulario()
         
-        # Verificar similares antes de procesar
-        tiene_similares, similares = self.alimento_service.verificar_similares(datos['nombre'])
-        if tiene_similares and similares:
-            if not self._confirmar_agregar_con_similares(similares):
-                return
+        # La verificación de similares ya no es necesaria con la API
+        # if tiene_similares and similares: ... (SE PUEDE ELIMINAR ESTE BLOQUE)
         
-        # Procesar la adición del alimento
+        # Procesar la "adición" del alimento
         exito, mensaje = self.alimento_service.agregar_alimento(
             datos['nombre'], 
             datos['calorias'], 
@@ -358,15 +357,19 @@ class Agregar_Alimento(QWidget):
         )
         
         if exito:
-            self._mostrar_exito("Operación exitosa", mensaje)
+            # --- Personalizamos el mensaje de éxito para la nueva lógica ---
+            mensaje_exito = (f"¡Éxito! El alimento '{datos['nombre']}' fue encontrado y es válido.\n\n"
+                             "Ahora puedes buscarlo y registrarlo en la pestaña 'Registrar Alimento'.")
+            self._mostrar_exito("Verificación Exitosa", mensaje_exito)
             self.vista.limpiar_formulario()
             
-            # ¡AQUÍ EMITIMOS LA SEÑAL DE AVISO!
-            print("EMITIENDO SEÑAL: catalogo_alimentos_actualizado")
+            # La señal sigue siendo útil por si quieres que otras partes de la UI reaccionen
             self.catalogo_alimentos_actualizado.emit()
             
         else:
-            self._mostrar_error("Error de validación", mensaje)
+            # Personalizamos el mensaje de error
+            mensaje_error = f"No se pudo verificar el alimento '{datos['nombre']}'.\n\nMotivo: {mensaje}"
+            self._mostrar_error("Error de Verificación", mensaje_error)
 
     def _confirmar_agregar_con_similares(self, similares: list) -> bool:
         """Confirma si el usuario quiere agregar el alimento a pesar de tener similares"""
