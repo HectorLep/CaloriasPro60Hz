@@ -1,45 +1,71 @@
 # ⚡ CaloriasPro60Hz ⚡
 
-![Banner o Screenshot Principal de la App](https://placehold.co/1200x600/1e293b/ffffff?text=CaloriasPro60Hz)
-> Una aplicación web integral para el seguimiento de tu salud: desde calorías y macros hasta tu pulso cardíaco.
+![Banner o Screenshot Principal de la App](https://placehold.co/1200x600/1a1a1a/ffffff?text=Interfaz+de+CaloriasPro60Hz)
+> Una aplicación de escritorio para Linux y Windows, construida en Python, para el seguimiento integral de tu salud y nutrición.
 
 ---
 
 ## 📝 Descripción del Proyecto
 
-Este proyecto fue desarrollado como parte de la asignatura `[Nombre de la Asignatura]` para la `[Nombre de tu Universidad]`. **CaloriasPro60Hz** nace de la necesidad de unificar en una sola plataforma las herramientas esenciales para el monitoreo de la salud y la nutrición. La aplicación permite a los usuarios no solo llevar un control detallado de su ingesta de alimentos, sino también medir signos vitales y calcular métricas de salud importantes.
+**CaloriasPro60Hz** es una aplicación de escritorio multiplataforma (Linux/Windows) desarrollada en Python como proyecto para la asignatura `[Nombre de la Asignatura]` en la `[Nombre de tu Universidad]`.
+
+A diferencia de las soluciones web, esta aplicación se ejecuta de forma nativa en tu sistema operativo, ofreciendo una experiencia rápida y fluida. El objetivo es proporcionar una herramienta robusta y centralizada para que los usuarios puedan monitorear su ingesta calórica, medir su pulso, y calcular métricas de salud clave como el IMC y la TMB, todo desde una única interfaz gráfica.
 
 ---
 
 ## ✨ Características Principales (Features)
 
-* ✅ **Registro de Alimentos:** Busca y añade alimentos de una base de datos para controlar el consumo diario de calorías y macronutrientes.
-* ❤️ **Medición de Pulso Cardíaco:** Mide tu frecuencia cardíaca en tiempo real directamente desde la aplicación.
-* ⚖️ **Cálculo de IMC:** Calcula tu Índice de Masa Corporal para evaluar tu estado nutricional.
-* 🔥 **Cálculo de TMB:** Estima tu Tasa Metabólica Basal para entender tu gasto energético en reposo.
-* 🎯 **Establecimiento de Metas:** Define tus objetivos calóricos diarios para mantenerte enfocado en tus metas de salud.
-* 🔐 **Autenticación de Usuarios:** Registro e inicio de sesión seguros para proteger la información de cada usuario.
+CaloriasPro60Hz está organizado en módulos para una gestión completa de tu salud:
+
+* **🍎 Gestión de Alimentos y Base de Datos**
+    * **Registro Diario:** Añade alimentos a tu consumo del día, calculando calorías por porción o por cada 100gr.
+    * **Base de Datos Personalizable:** Agrega nuevos alimentos a la base de datos de la aplicación para usarlos en futuros registros.
+
+* **❤️ Módulo de Salud Centralizado**
+    * **Calculadoras de Salud:** Mide tu IMC (Índice de Masa Corporal) y TMB (Tasa Metabólica Basal) de forma instantánea.
+    * **Seguimiento de Hidratación:** Registra los vasos de agua tomados, con una meta diaria recomendada según tu peso.
+    * **Progreso Visual:** Una barra de progreso te muestra en tiempo real cuántas calorías has consumido de tu meta diaria.
+    * **Actualización de Peso:** Registra tu peso actual para mantener tus cálculos y progreso siempre al día.
+    * **🤖 Asistente IA Integrado:** Recibe consejos, análisis y respuestas de un asistente inteligente para ayudarte a alcanzar tus metas de salud.
+
+* **📊 Gráficos y Estadísticas de Progreso**
+    * Visualiza tu consumo de calorías, agua y la frecuencia de alimentos consumidos.
+    * Filtra las vistas por día, semana o mes para entender tus hábitos a lo largo del tiempo.
+
+* **📖 Historial de Consumo Detallado**
+    * Revisa todos los alimentos que has consumido en el pasado.
+    * Filtra tu historial por fechas específicas para encontrar un registro fácilmente.
+
+* **🍽️ Creador de Menús**
+    * Planifica tus comidas y dietas con antelación creando menús personalizados para la semana.
+
+* **⚙️ Configuración y Gestión de Cuenta**
+    * **Perfil de Usuario:** Visualiza y actualiza tu información personal como estatura, edad, nivel de actividad y metas calóricas.
+    * **Recordatorios Personalizables:** Configura notificaciones para recordar actualizar tu peso, con frecuencias diarias, semanales, etc.
+    * **Seguridad y Privacidad:** Cambia tu contraseña, cierra la sesión de forma segura o elimina tu cuenta y todos tus datos permanentemente.
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas (Tech Stack)
 
-* **Frontend:** `[Ej: React, CSS3, TailwindCSS]`
-* **Backend:** `[Ej: Node.js, Express]`
-* **Base de Datos:** `[Ej: MongoDB, Firebase, PostgreSQL]`
-* **APIs Externas:** `[Ej: Edamam API para datos de alimentos, si aplica]`
-* **Despliegue (Deployment):** `[Ej: Vercel, Netlify, Heroku]`
+* **Lenguaje:** `Python 3.10+`
+* **Interfaz Gráfica (GUI):** `PyQt6`
+* **Librerías Clave:**
+    * `[Ej: OpenCV-Python]` para la medición del pulso.
+    * `[Ej: NumPy / Pandas]` para cálculos y manipulación de datos.
+    * `[Ej: Matplotlib / pyqtgraph]` para generar gráficos.
+    * `[Menciona cualquier otra librería importante aquí]`
 
 ---
 
 ## 🚀 Cómo Empezar (Getting Started)
 
-Proporciona una guía paso a paso para que otra persona pueda clonar y ejecutar tu proyecto en su máquina local.
+Sigue estos pasos para instalar y ejecutar el proyecto en un entorno local.
 
 ### Prerrequisitos
 
-* Node.js v18.x o superior
-* npm o yarn
+* Python 3.10 o superior
+* pip (El gestor de paquetes de Python)
 * Git
 
 ### Instalación
@@ -52,33 +78,39 @@ Proporciona una guía paso a paso para que otra persona pueda clonar y ejecutar 
     ```bash
     cd CaloriasPro60Hz
     ```
-3.  **Instala las dependencias:**
+3.  **Crea y activa un entorno virtual (Recomendado):**
+    * En **Linux / macOS**:
+        ```bash
+        python3 -m venv venv
+        source venv/bin/activate
+        ```
+    * En **Windows**:
+        ```bash
+        python -m venv venv
+        .\venv\Scripts\activate
+        ```
+4.  **Instala las dependencias del proyecto:**
+    *(Asegúrate de tener un archivo `requirements.txt` en tu repositorio)*
     ```bash
-    npm install
-    ```
-4.  **Configura las variables de entorno:**
-    Crea un archivo `.env` en la raíz y añade las siguientes variables.
-    ```
-    # Ejemplo
-    DATABASE_URL="tu-conexion-a-la-base-de-datos"
-    JWT_SECRET="tu-palabra-secreta-para-tokens"
+    pip install -r requirements.txt
     ```
 5.  **Ejecuta la aplicación:**
     ```bash
-    npm start
+    python main.py
     ```
+    *(Reemplaza `main.py` por el nombre de tu script principal si es diferente)*
 
 ---
 
-## 🔗 Demo en Vivo
+## 📸 Screenshots de la Aplicación
 
-* **Puedes ver una demo en vivo aquí: [https://tu-proyecto.vercel.app/](https://tu-proyecto.vercel.app/)** *(Reemplaza este enlace por el de tu proyecto desplegado)*
+Como no hay "Demo en Vivo" para una app de escritorio, aquí puedes ver cómo luce:
 
----
+**Pantalla Principal / Dashboard**
+![Dashboard](https://placehold.co/800x600/1a1a1a/ffffff?text=Dashboard+Principal)
 
-## 🤝 Contribuciones (Contributing)
-
-Al ser un proyecto académico, por el momento no buscamos contribuciones externas. Sin embargo, si tienes alguna sugerencia o encuentras un error, te agradecemos que abras un 'issue' para discutirlo.
+**Módulo de Salud con Asistente IA**
+![Pulso](https://placehold.co/800x600/1a1a1a/ffffff?text=Módulo+de+Salud)
 
 ---
 
@@ -90,8 +122,8 @@ Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para má
 
 ## 👤 Autores
 
-* **Hector** - `[@usuario-github-de-hector](https://github.com/HectorLep)`
-* **Maximiliano** - `[@usuario-github-de-maximiliano](https://github.com/Mxtsi7)`
-* **Agustin** - `[@usuario-github-de-agustin](https://github.com/sonickiller39)`
-* **Christoper** - `[@usuario-github-de-christoper](https://github.com/Insert-name-115)`
-* **Javier** - `[@usuario-github-de-javier](https://github.com/javierrrp)`
+* **Hector** - [@HectorLep](https://github.com/HectorLep)
+* **Maximiliano** - [@Mxtsi7](https://github.com/Mxtsi7)
+* **Agustin** - [@sonickiller39](https://github.com/sonickiller39)
+* **Christoper** - [@Insert-name-115](https://github.com/Insert-name-115)
+* **Javier** - [@javierrrp](https://github.com/javierrrp)
