@@ -24,233 +24,172 @@ class RegistroForm(IForm, QWidget):
         self.user_database = UserDatabase()
         self.validator = UserValidator()
         self.init_ui()
-    
+        
     def init_ui(self):
         # Layout principal
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.setContentsMargins(30, 30, 30, 30)
-        
-        # Frame contenedor
+        main_layout.setContentsMargins(20, 20, 20, 20)
+
+        # Frame contenedor, usando tu color `gris`
         self.frame = QFrame()
         self.frame.setStyleSheet(f"""
             QFrame {{
                 background-color: {gris};
-                border: 2px solid {azul_medio_oscuro};
-                border-radius: 20px;
-                padding: 15px;
+                border-radius: 15px;
+                padding: 20px;
             }}
         """)
-        self.frame.setFixedSize(500, 600)
-        
+        self.frame.setFixedSize(450, 620)
+
         frame_layout = QVBoxLayout(self.frame)
-        frame_layout.setSpacing(10)
-        
+        frame_layout.setSpacing(15)
+        frame_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
         # Título
-        titulo = QLabel("Registrarse")
-        titulo.setFont(QFont("Arial", 15, QFont.Weight.Bold))
-        titulo.setStyleSheet(f"color: {azul_medio_oscuro};")
+        titulo = QLabel("Crear una Cuenta")
+        titulo.setFont(QFont("Arial", 20, QFont.Weight.Bold))
+        # Usando un color de texto blanco para que resalte sobre el fondo `gris`
+        titulo.setStyleSheet(f"color: {color_texto_blanco}; margin-bottom: 5px;")
         titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         frame_layout.addWidget(titulo)
-        
+
         # Área de scroll
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setStyleSheet(f"""
             QScrollArea {{
-                background-color: {gris};
+                background-color: transparent;
                 border: none;
             }}
             QScrollBar:vertical {{
-                background-color: {azul_medio_oscuro};
+                background-color: {azul_medio_oscuro}; /* Tu color oscuro para el fondo del scroll */
                 width: 12px;
+                margin: 0px;
                 border-radius: 6px;
             }}
             QScrollBar::handle:vertical {{
-                background-color: {verde_boton};
+                background-color: {verde_boton}; /* Tu color verde para la manija del scroll */
+                min-height: 20px;
                 border-radius: 6px;
             }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                background: none;
+                border: none;
+            }}
         """)
-        
+
         # Widget contenedor del scroll
         scroll_widget = QWidget()
+        scroll_widget.setStyleSheet("background-color: transparent;")
         scroll_layout = QVBoxLayout(scroll_widget)
-        scroll_layout.setSpacing(8)
-        
-        # Estilos para labels y entries
+        scroll_layout.setSpacing(10)
+        scroll_layout.setContentsMargins(5, 0, 5, 0)
+
+        # Estilos basados en tu paleta
         label_style = f"""
             QLabel {{
-                background-color: {azul_medio_oscuro};
-                color: white;
-                font: 13px Arial;
-                border-radius: 18px;
-                padding: 8px;
-                min-width: 172px;
-            }}
-        """
-        
-        entry_style = f"""
-            QLineEdit {{
-                background-color: {color_entry};
-                color: black;
-                border-radius: 18px;
-                padding: 8px;
-                min-width: 172px;
-                font: 12px Arial;
-            }}
-        """
-        
-        combo_style = f"""
-            QComboBox {{
-                background-color: {gris_label};
-                color: {negro_texto};
+                background-color: {azul_medio_oscuro}; /* Tu color oscuro para el fondo de las etiquetas */
+                color: {color_texto_blanco}; /* Texto blanco para contraste */
+                font: bold 13px Arial;
                 border-radius: 15px;
                 padding: 8px;
-                min-width: 187px;
-                font: 12px Arial;
+                min-height: 20px;
+            }}
+        """
+
+        input_style = f"""
+            QLineEdit, QComboBox, QDateEdit {{
+                background-color: {color_entry}; /* Tu color para los campos de entrada */
+                color: {negro_texto}; /* Tu color de texto para las entradas */
+                border-radius: 15px;
+                padding: 8px 12px;
+                font: 13px Arial;
+                min-height: 20px;
             }}
             QComboBox::drop-down {{
-                background-color: {verde_boton};
-                border-radius: 8px;
+                background-color: {celeste_pero_oscuro}; /* Tu color para el desplegable */
+                border-top-right-radius: 15px;
+                border-bottom-right-radius: 15px;
+                width: 25px;
             }}
         """
-        
-        # Campos del formulario
-        self.widgets['nombre_label'] = QLabel("Nombre")
-        self.widgets['nombre_label'].setStyleSheet(label_style)
-        self.widgets['nombre_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_layout.addWidget(self.widgets['nombre_label'])
-        
-        self.widgets['nombre_entry'] = QLineEdit()
-        self.widgets['nombre_entry'].setPlaceholderText("Introduce tu nombre")
-        self.widgets['nombre_entry'].setStyleSheet(entry_style)
-        scroll_layout.addWidget(self.widgets['nombre_entry'])
-        
-        self.widgets['contra_label'] = QLabel("Contraseña")
-        self.widgets['contra_label'].setStyleSheet(label_style)
-        self.widgets['contra_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_layout.addWidget(self.widgets['contra_label'])
-        
-        self.widgets['contra_entry'] = QLineEdit()
-        self.widgets['contra_entry'].setEchoMode(QLineEdit.EchoMode.Password)
-        self.widgets['contra_entry'].setStyleSheet(entry_style)
-        scroll_layout.addWidget(self.widgets['contra_entry'])
-        
-        self.widgets['gen_label'] = QLabel("Sexo")
-        self.widgets['gen_label'].setStyleSheet(label_style)
-        self.widgets['gen_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_layout.addWidget(self.widgets['gen_label'])
-        
-        self.widgets['gen_combobox'] = QComboBox()
-        self.widgets['gen_combobox'].addItems(["Masculino", "Femenino"])
-        self.widgets['gen_combobox'].setStyleSheet(combo_style)
-        scroll_layout.addWidget(self.widgets['gen_combobox'])
-        
-        self.widgets['peso_label'] = QLabel("Peso (kg)")
-        self.widgets['peso_label'].setStyleSheet(label_style)
-        self.widgets['peso_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_layout.addWidget(self.widgets['peso_label'])
-        
-        self.widgets['peso_entry'] = QLineEdit()
-        self.widgets['peso_entry'].setPlaceholderText("Introduce tu peso")
-        self.widgets['peso_entry'].setStyleSheet(entry_style)
-        scroll_layout.addWidget(self.widgets['peso_entry'])
-        
-        self.widgets['altura_label'] = QLabel("Altura (cm)")
-        self.widgets['altura_label'].setStyleSheet(label_style)
-        self.widgets['altura_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_layout.addWidget(self.widgets['altura_label'])
-        
-        self.widgets['altura_entry'] = QLineEdit()
-        self.widgets['altura_entry'].setPlaceholderText("Introduce tu altura")
-        self.widgets['altura_entry'].setStyleSheet(entry_style)
-        scroll_layout.addWidget(self.widgets['altura_entry'])
-        
-        self.widgets['meta_label'] = QLabel("Meta de calorías diaria")
-        self.widgets['meta_label'].setStyleSheet(label_style)
-        self.widgets['meta_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_layout.addWidget(self.widgets['meta_label'])
-        
-        self.widgets['meta_entry'] = QLineEdit()
-        self.widgets['meta_entry'].setPlaceholderText("Introduce tu meta de calorías")
-        self.widgets['meta_entry'].setStyleSheet(entry_style)
-        scroll_layout.addWidget(self.widgets['meta_entry'])
-        
-        self.widgets['lvl_actividad_label'] = QLabel("Nivel de Actividad")
-        self.widgets['lvl_actividad_label'].setStyleSheet(label_style)
-        self.widgets['lvl_actividad_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_layout.addWidget(self.widgets['lvl_actividad_label'])
-        
-        self.widgets['lvl_actividad_combobox'] = QComboBox()
-        self.widgets['lvl_actividad_combobox'].addItems(["Sedentario", "Ligero", "Moderado", "Intenso"])
-        self.widgets['lvl_actividad_combobox'].setStyleSheet(combo_style)
-        scroll_layout.addWidget(self.widgets['lvl_actividad_combobox'])
-        
-        self.widgets['edad_label'] = QLabel("Fecha de Nacimiento")
-        self.widgets['edad_label'].setStyleSheet(label_style)
-        self.widgets['edad_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_layout.addWidget(self.widgets['edad_label'])
-        
-        # DateEdit para fecha de nacimiento
-        self.widgets['fecha_nacimiento_entry'] = QDateEdit()
-        self.widgets['fecha_nacimiento_entry'].setCalendarPopup(True)
-        self.widgets['fecha_nacimiento_entry'].setDate(QDate.currentDate().addYears(-25))
-        min_date = QDate.currentDate().addYears(-120)
-        max_date = QDate.currentDate().addYears(-13)
-        self.widgets['fecha_nacimiento_entry'].setDateRange(min_date, max_date)
-        self.widgets['fecha_nacimiento_entry'].setStyleSheet(f"""
-            QDateEdit {{
-                background-color: {color_entry};
-                color: black;
-                border-radius: 15px;
-                padding: 8px;
-                min-width: 187px;
-                font: 12px Arial;
-            }}
-        """)
-        scroll_layout.addWidget(self.widgets['fecha_nacimiento_entry'])
-        
-        # Botones
-        button_style = f"""
-            QPushButton {{
-                border-radius: 18px;
-                font: bold 13px Arial;
-                padding: 8px;
-                min-width: 187px;
-            }}
-        """
-        
-        self.widgets['guardar_button'] = QPushButton("Guardar")
-        self.widgets['guardar_button'].setStyleSheet(button_style + f"""
-            QPushButton {{
-                background-color: {verde_boton};
-                color: {azul_medio_oscuro};
-            }}
-            QPushButton:hover {{
-                background-color: {verde_oscuro};
-            }}
-        """)
-        self.widgets['guardar_button'].clicked.connect(self._guardar)
-        scroll_layout.addWidget(self.widgets['guardar_button'])
-        
-        self.widgets['btn_volver'] = QPushButton('Volver Atrás')
-        self.widgets['btn_volver'].setStyleSheet(button_style + f"""
-            QPushButton {{
-                background-color: {riesgo_medio};
-                color: {azul_medio_oscuro};
-            }}
-            QPushButton:hover {{
-                background-color: {riesgo_alto};
-            }}
-        """)
-        self.widgets['btn_volver'].clicked.connect(self._volver_atras)
-        scroll_layout.addWidget(self.widgets['btn_volver'])
-        
+
+        # --- Campos del formulario (sin cambios en la lógica, solo en el estilo) ---
+        campos = {
+            "Nombre": ("nombre_entry", QLineEdit(), "Introduce tu nombre"),
+            "Contraseña": ("contra_entry", QLineEdit(), "Crea una contraseña segura"),
+            "Sexo": ("gen_combobox", QComboBox(), None),
+            "Peso (kg)": ("peso_entry", QLineEdit(), "Tu peso actual en kilogramos"),
+            "Altura (cm)": ("altura_entry", QLineEdit(), "Tu altura en centímetros"),
+            "Meta de calorías diaria": ("meta_entry", QLineEdit(), "Ej: 2000 kcal"),
+            "Nivel de Actividad": ("lvl_actividad_combobox", QComboBox(), None),
+            "Fecha de Nacimiento": ("fecha_nacimiento_entry", QDateEdit(), None)
+        }
+
+        for label_text, (widget_name, widget_instance, placeholder) in campos.items():
+            label = QLabel(label_text)
+            label.setStyleSheet(label_style)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            scroll_layout.addWidget(label)
+
+            self.widgets[widget_name] = widget_instance
+            widget_instance.setStyleSheet(input_style)
+
+            if isinstance(widget_instance, QLineEdit):
+                widget_instance.setPlaceholderText(placeholder)
+            if widget_name == "contra_entry":
+                widget_instance.setEchoMode(QLineEdit.EchoMode.Password)
+            if widget_name == "gen_combobox":
+                widget_instance.addItems(["Masculino", "Femenino"])
+            if widget_name == "lvl_actividad_combobox":
+                widget_instance.addItems(["Sedentario", "Ligero", "Moderado", "Intenso"])
+            if isinstance(widget_instance, QDateEdit):
+                    widget_instance.setCalendarPopup(True)
+                    widget_instance.setDate(QDate.currentDate().addYears(-25))
+                    min_date = QDate.currentDate().addYears(-120)
+                    max_date = QDate.currentDate().addYears(-13)
+                    widget_instance.setDateRange(min_date, max_date)
+                    widget_instance.setDisplayFormat("dd/MM/yyyy")
+
+            scroll_layout.addWidget(widget_instance)
+
         scroll_area.setWidget(scroll_widget)
         frame_layout.addWidget(scroll_area)
-        
+
+        # Botones usando tus variables `verde_boton`, `riesgo_medio` etc.
+        self.widgets['guardar_button'] = QPushButton("Crear Cuenta")
+        self.widgets['guardar_button'].setStyleSheet(f"""
+            QPushButton {{
+                background-color: {verde_boton};
+                color: {color_texto_blanco};
+                border: none;
+                border-radius: 15px;
+                font: bold 14px Arial;
+                padding: 12px;
+            }}
+            QPushButton:hover {{ background-color: {verde_oscuro}; }}
+        """)
+        self.widgets['guardar_button'].clicked.connect(self._guardar)
+        frame_layout.addWidget(self.widgets['guardar_button'])
+
+        self.widgets['btn_volver'] = QPushButton('Volver Atrás')
+        self.widgets['btn_volver'].setStyleSheet(f"""
+            QPushButton {{
+                background-color: {riesgo_medio};
+                color: {color_texto_blanco};
+                border: none;
+                border-radius: 15px;
+                font: bold 14px Arial;
+                padding: 12px;
+            }}
+            QPushButton:hover {{ background-color: {riesgo_alto}; }}
+        """)
+        self.widgets['btn_volver'].clicked.connect(self._volver_atras)
+        frame_layout.addWidget(self.widgets['btn_volver'])
+
         main_layout.addWidget(self.frame)
-    
+            
     def mostrar(self):
         self.show()
     
