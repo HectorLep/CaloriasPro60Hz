@@ -1,6 +1,5 @@
-# repositories/alimento_repository.py
 import sqlite3
-from typing import List, Tuple, Optional, Union
+from typing import List, Optional
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 

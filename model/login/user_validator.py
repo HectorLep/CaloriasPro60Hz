@@ -1,4 +1,3 @@
-# Validador de usuarios adaptado para PyQt6
 import re
 from datetime import datetime
 

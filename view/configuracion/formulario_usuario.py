@@ -1,8 +1,7 @@
 # En: view/configuracion/formulario_usuario.py
 
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QComboBox, QMessageBox
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+
 
 class UpdateUserForm(QDialog):
     def __init__(self, user_service, parent=None):

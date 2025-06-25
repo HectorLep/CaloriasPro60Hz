@@ -1,6 +1,5 @@
-# validators/alimento_validator.py
 import re
-from typing import Tuple, Union, List
+from typing import Tuple, Union
 from abc import ABC, abstractmethod
 
 class ValidatorInterface(ABC):

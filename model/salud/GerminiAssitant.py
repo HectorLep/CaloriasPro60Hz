@@ -1,7 +1,7 @@
 from google import genai
 from google.genai import types
 from PyQt6.QtCore import QObject, pyqtSignal
-from .security_manager import SecureAPIManager, EnvironmentAPIManager
+from .security_manager import SecureAPIManager
 from datetime import datetime
 import sqlite3
 import re

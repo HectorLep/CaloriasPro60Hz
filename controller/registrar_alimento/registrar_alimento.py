@@ -1,12 +1,8 @@
-import sys
-from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-                            QLineEdit, QListWidget, QComboBox, QPushButton, 
-                            QLabel, QSlider, QMessageBox, QFrame, QGridLayout)
+
+from PyQt6.QtWidgets import (QWidget,QComboBox, QMessageBox)
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QPalette, QColor
 from datetime import datetime
 
-# Importar las clases mejoradas
 from model.registrar_alimento.repositorio import SQLiteAlimentoRepository
 from model.registrar_alimento.searchmanager import BuscadorManager
 from model.registrar_alimento.timemanager import TiempoManager

@@ -1,5 +1,4 @@
 import sqlite3
-import numpy as np
 
 class Calculo:
     # Rangos de IMC y sus categorías

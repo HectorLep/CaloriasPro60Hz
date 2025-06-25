@@ -1,4 +1,3 @@
-from PyQt6.QtWidgets import QListWidget
 from PyQt6.QtCore import QRect
 
 class BuscadorManager:

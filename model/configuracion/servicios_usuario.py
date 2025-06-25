@@ -1,4 +1,3 @@
-# servicios_usuario.py
 from .consultas import (
     obtener_datos_usuario,
     actualizar_datos_usuario,

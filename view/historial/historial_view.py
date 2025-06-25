@@ -3,8 +3,8 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QDateEdit, QComboBox, QLineEdit, QGroupBox,
                              QHeaderView, QAbstractItemView, QMessageBox,
                              QFileDialog, QFrame, QScrollArea)
-from PyQt6.QtCore import Qt, QDate, pyqtSignal, QPropertyAnimation, QEasingCurve, QRect
-from PyQt6.QtGui import QFont, QIcon, QPainter, QPen, QColor
+from PyQt6.QtCore import Qt, QDate, pyqtSignal, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QFont, QColor
 import csv
 
 class ModernGroupBox(QGroupBox):

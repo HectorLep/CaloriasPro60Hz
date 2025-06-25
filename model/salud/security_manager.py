@@ -1,4 +1,3 @@
-# security_manager.py - Sistema de encriptación segura para API keys
 import os
 import base64
 import hashlib

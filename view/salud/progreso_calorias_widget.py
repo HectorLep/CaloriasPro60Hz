@@ -2,7 +2,6 @@ import sqlite3
 from datetime import datetime
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QProgressBar, QLabel
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
 
 class ProgresoCaloriasWidget(QWidget):
     def __init__(self, usuario, parent=None):

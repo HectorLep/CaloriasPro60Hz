@@ -1,4 +1,3 @@
-# consultas.py
 from model.util.base import DBManager
 from .mensajes import MessageHandler  # Importamos nuestro manejador de mensajes
 import os

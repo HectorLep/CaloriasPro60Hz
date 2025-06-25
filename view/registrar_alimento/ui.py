@@ -1,6 +1,5 @@
 from PyQt6.QtWidgets import (QLineEdit, QListWidget, QPushButton, 
                             QLabel, QFrame)
-from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
 class UIManager:
