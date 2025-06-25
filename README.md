@@ -7,7 +7,7 @@
 
 ## 📝 Descripción del Proyecto
 
-**CaloriasPro60Hz** es una aplicación de escritorio multiplataforma (Linux/Windows) desarrollada en Python como proyecto para la asignatura `Sistemas Operativos` en la `Universidad del Bío-Bío`.
+**CaloriasPro60Hz** es una aplicación de escritorio multiplataforma (Linux/Windows) desarrollada en Python como proyecto para la asignatura `Diseño de Software` en la `Universidad Catolica de Temuco`.
 
 A diferencia de las soluciones web, esta aplicación se ejecuta de forma nativa en tu sistema operativo, ofreciendo una experiencia rápida y fluida. El objetivo es proporcionar una herramienta robusta y centralizada para que los usuarios puedan monitorear su ingesta calórica, medir su pulso, y calcular métricas de salud clave como el IMC y la TMB, todo desde una única interfaz gráfica.
 
