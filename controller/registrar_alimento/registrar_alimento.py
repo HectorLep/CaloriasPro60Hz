@@ -8,6 +8,7 @@ from model.registrar_alimento.searchmanager import BuscadorManager
 from model.registrar_alimento.timemanager import TiempoManager
 from view.registrar_alimento.ui import UIManager
 from model.util.mensajes import *
+from model.registrar_alimento.api_repositorio import ApiAlimentoRepository
 
 class RegistroAlimentoPyQt6(QWidget):
     """Clase principal para el registro de alimentos"""
@@ -33,7 +34,8 @@ class RegistroAlimentoPyQt6(QWidget):
         """)
         
         # Inicializar repositorio
-        self.repository = SQLiteAlimentoRepository(self.usuario)
+        #self.repository = SQLiteAlimentoRepository(self.usuario)
+        self.repository = ApiAlimentoRepository()
         
         # Inicializar managers
         self.ui_manager = UIManager()

@@ -56,7 +56,10 @@ class AlimentoService:
         if self.repository.guardar_alimento(alimento):
             return True, f"Se ha registrado '{nombre_normalizado}' correctamente."
         else:
-            return False, "Error al guardar el alimento en la base de datos."
+            # --- ¡CAMBIEMOS ESTE MENSAJE CONFUSO! ---
+            mensaje_final = (f"No se pudo encontrar '{nombre_normalizado}' en la base de datos externa.\n\n"
+                            "Intente con un nombre más simple o en inglés (ej. 'Manzana' en lugar de 'Manzana roja grande').")
+            return False, mensaje_final
     
     def verificar_similares(self, nombre: str) -> Tuple[bool, List[str]]:
         """
