@@ -3,7 +3,7 @@ import webbrowser
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QFrame, QLineEdit, QComboBox,
                              QMessageBox)
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from model.util.colores import *
 from model.util.mensajes import *
 from model.agregar_alimento.alimento_factory import SqliteAlimentoFactory
@@ -358,6 +358,7 @@ class Agregar_Alimento(QWidget):
     Controlador principal que coordina la vista, servicios y repositorio.
     Convertido a PyQt6 siguiendo el principio de responsabilidad única (SRP).
     """
+    catalogo_alimentos_actualizado = pyqtSignal()
     
     def __init__(self, panel_principal, color, usuario=None):
         super().__init__(panel_principal)
@@ -414,6 +415,7 @@ class Agregar_Alimento(QWidget):
             
             QTimer.singleShot(1000, lambda: self._mostrar_mensaje(mensaje, titulo))
                 
+
     def _manejar_agregar_alimento(self):
         """Maneja la lógica de agregar un alimento (SRP - una sola responsabilidad)"""
         datos = self.vista.obtener_datos_formulario()
@@ -434,9 +436,14 @@ class Agregar_Alimento(QWidget):
         if exito:
             self._mostrar_exito("Operación exitosa", mensaje)
             self.vista.limpiar_formulario()
+            
+            # ¡AQUÍ EMITIMOS LA SEÑAL DE AVISO!
+            print("EMITIENDO SEÑAL: catalogo_alimentos_actualizado")
+            self.catalogo_alimentos_actualizado.emit()
+            
         else:
             self._mostrar_error("Error de validación", mensaje)
-    
+
     def _confirmar_agregar_con_similares(self, similares: list) -> bool:
         """Confirma si el usuario quiere agregar el alimento a pesar de tener similares"""
         similares_texto = ", ".join(similares[:3])  # Mostrar solo los primeros 3

@@ -1,226 +1,96 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Formulario para actualizar datos de usuario
-"""
+# En: view/configuracion/formulario_usuario.py
 
-from .formularios import FormHandler
-from PyQt6.QtWidgets import (QWidget, QLabel, QLineEdit, QPushButton, 
-                             QComboBox, QFrame)
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QComboBox, QMessageBox
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
-from model.configuracion.servicios_usuario import UserService
-from model.configuracion.mensajes import MessageHandler
 
-class UpdateUserForm(FormHandler):
-    def __init__(self, parent, user_service: UserService, restore_callback):
-        self.parent = parent
+class UpdateUserForm(QDialog):
+    def __init__(self, user_service, parent=None):
+        super().__init__(parent)
         self.user_service = user_service
-        self.restore_callback = restore_callback
-        self.widgets = {}
-
-    def create_form(self):
-        edad, genero, peso, nivel_actividad, meta_cal, estatura = self.user_service.cargar_datos_usuario()
-
-        # Frame de fondo principal
-        self.widgets['bg_frame'] = QFrame(self.parent)
-        self.widgets['bg_frame'].setGeometry(45, 100, 390, 385)
-        self.widgets['bg_frame'].setStyleSheet("""
-            QFrame {
-                background-color: #2b2b2b;
-                border-radius: 35px;
+        
+        # --- Configuración de la Ventana ---
+        self.setWindowTitle("Actualizar Información de Usuario")
+        self.setFixedSize(400, 350)
+        self.setModal(True) # Bloquea la ventana principal mientras está abierta
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #2C3E50;
+                font-family: Arial;
             }
         """)
 
+        # --- Layouts ---
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(25, 25, 25, 25)
+        main_layout.setSpacing(20)
+
+        # --- Widgets del formulario ---
+        # (Hecho de forma similar a la versión anterior)
+        
         # Estatura
-        self.widgets['bg_frame_estatura'] = QFrame(self.parent)
-        self.widgets['bg_frame_estatura'].setGeometry(65, 135, 125, 40)
-        self.widgets['bg_frame_estatura'].setStyleSheet("""
-            QFrame {
-                background-color: #cccccc;
-                border-radius: 20px;
-            }
-        """)
+        estatura_layout = QHBoxLayout()
+        estatura_label = QLabel("Estatura (cm)")
+        estatura_label.setStyleSheet("color: white; font-size: 14px; font-weight: bold;")
+        self.estatura_input = QLineEdit()
+        self.estatura_input.setStyleSheet("background-color: white; color: black; border-radius: 10px; padding: 5px;")
+        estatura_layout.addWidget(estatura_label)
+        estatura_layout.addWidget(self.estatura_input)
+        
+        # Objetivo
+        objetivo_layout = QHBoxLayout()
+        objetivo_label = QLabel("Objetivo (kcal)")
+        objetivo_label.setStyleSheet("color: white; font-size: 14px; font-weight: bold;")
+        self.objetivo_input = QLineEdit()
+        self.objetivo_input.setStyleSheet("background-color: white; color: black; border-radius: 10px; padding: 5px;")
+        objetivo_layout.addWidget(objetivo_label)
+        objetivo_layout.addWidget(self.objetivo_input)
 
-        self.widgets['label_estatura'] = QLabel("Estatura", self.parent)
-        self.widgets['label_estatura'].setGeometry(82, 140, 100, 30)
-        self.widgets['label_estatura'].setStyleSheet("""
-            QLabel {
-                color: black;
-                font-size: 14px;
-                font-weight: bold;
-                background-color: transparent;
-            }
-        """)
-        self.widgets['label_estatura'].setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        # Nivel Actividad
+        actividad_layout = QHBoxLayout()
+        actividad_label = QLabel("Nivel Actividad")
+        actividad_label.setStyleSheet("color: white; font-size: 14px; font-weight: bold;")
+        self.actividad_combo = QComboBox()
+        self.actividad_combo.addItems(["Sedentario", "Ligero", "Moderado", "Intenso"])
+        self.actividad_combo.setStyleSheet("background-color: white; color: black; border-radius: 10px; padding: 5px;")
+        actividad_layout.addWidget(actividad_label)
+        actividad_layout.addWidget(self.actividad_combo)
 
-        self.widgets['entry_estatura'] = QLineEdit(self.parent)
-        self.widgets['entry_estatura'].setGeometry(200, 135, 210, 40)
-        self.widgets['entry_estatura'].setText(f"{estatura} cm")
-        self.widgets['entry_estatura'].setStyleSheet("""
-            QLineEdit {
-                background-color: #f0f0f0;
-                color: black;
-                border: none;
-                border-radius: 20px;
-                padding: 8px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-        """)
-        self.widgets['entry_estatura'].setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        # --- Botones ---
+        btn_actualizar = QPushButton("Actualizar datos")
+        btn_actualizar.setStyleSheet("background-color: #2ECC71; color: #2C3E50; font-weight: bold; border-radius: 15px; padding: 10px;")
+        
+        btn_regresar = QPushButton("Regresar")
+        btn_regresar.setStyleSheet("background-color: #f39c12; color: white; font-weight: bold; border-radius: 15px; padding: 10px;")
 
-        # Objetivo calorías
-        self.widgets['bg_frame_obj'] = QFrame(self.parent)
-        self.widgets['bg_frame_obj'].setGeometry(65, 185, 125, 40)
-        self.widgets['bg_frame_obj'].setStyleSheet("""
-            QFrame {
-                background-color: #cccccc;
-                border-radius: 20px;
-            }
-        """)
+        # --- Conectar los botones a los slots de QDialog ---
+        btn_actualizar.clicked.connect(self.accept) # Cierra el diálogo y retorna "Aceptado"
+        btn_regresar.clicked.connect(self.reject)   # Cierra el diálogo y retorna "Rechazado"
 
-        self.widgets['label_obj'] = QLabel("Objetivo kcal", self.parent)
-        self.widgets['label_obj'].setGeometry(82, 190, 100, 30)
-        self.widgets['label_obj'].setStyleSheet("""
-            QLabel {
-                color: black;
-                font-size: 14px;
-                font-weight: bold;
-                background-color: transparent;
-            }
-        """)
-        self.widgets['label_obj'].setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        # --- Añadir todo al layout ---
+        main_layout.addLayout(estatura_layout)
+        main_layout.addLayout(objetivo_layout)
+        main_layout.addLayout(actividad_layout)
+        main_layout.addStretch()
+        main_layout.addWidget(btn_actualizar)
+        main_layout.addWidget(btn_regresar)
 
-        self.widgets['entry_obj'] = QLineEdit(self.parent)
-        self.widgets['entry_obj'].setGeometry(200, 185, 210, 40)
-        self.widgets['entry_obj'].setText(str(meta_cal))
-        self.widgets['entry_obj'].setStyleSheet("""
-            QLineEdit {
-                background-color: #f0f0f0;
-                color: black;
-                border: none;
-                border-radius: 20px;
-                padding: 8px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-        """)
-        self.widgets['entry_obj'].setFont(QFont("Arial", 12, QFont.Weight.Bold))
+        self._load_data()
 
-        # Nivel de actividad
-        self.widgets['bg_frame_nvl'] = QFrame(self.parent)
-        self.widgets['bg_frame_nvl'].setGeometry(65, 235, 125, 40)
-        self.widgets['bg_frame_nvl'].setStyleSheet("""
-            QFrame {
-                background-color: #cccccc;
-                border-radius: 20px;
-            }
-        """)
-
-        self.widgets['label_nvl'] = QLabel("Nivel act", self.parent)
-        self.widgets['label_nvl'].setGeometry(82, 240, 100, 30)
-        self.widgets['label_nvl'].setStyleSheet("""
-            QLabel {
-                color: black;
-                font-size: 14px;
-                font-weight: bold;
-                background-color: transparent;
-            }
-        """)
-        self.widgets['label_nvl'].setFont(QFont("Arial", 12, QFont.Weight.Bold))
-
-        self.widgets['combobox_nvl'] = QComboBox(self.parent)
-        self.widgets['combobox_nvl'].setGeometry(200, 235, 210, 40)
-        self.widgets['combobox_nvl'].addItems(["Sendatario", "Ligero", "Moderado", "Intenso"])
-        self.widgets['combobox_nvl'].setCurrentText(nivel_actividad)
-        self.widgets['combobox_nvl'].setStyleSheet("""
-            QComboBox {
-                background-color: #cccccc;
-                color: black;
-                border: none;
-                border-radius: 20px;
-                padding: 8px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-            QComboBox::drop-down {
-                border: none;
-                background-color: #4CAF50;
-                border-radius: 5px;
-            }
-            QComboBox::down-arrow {
-                width: 10px;
-                height: 10px;
-            }
-        """)
-        self.widgets['combobox_nvl'].setFont(QFont("Arial", 12, QFont.Weight.Bold))
-
-        # Botón Actualizar
-        self.widgets['boton_guardar'] = QPushButton("Actualizar datos", self.parent)
-        self.widgets['boton_guardar'].setGeometry(120, 350, 250, 40)
-        self.widgets['boton_guardar'].setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: black;
-                border: none;
-                border-radius: 20px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-        """)
-        self.widgets['boton_guardar'].setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        self.widgets['boton_guardar'].clicked.connect(self.save)
-
-        # Botón Regresar
-        self.widgets['boton_regresar'] = QPushButton("Regresar", self.parent)
-        self.widgets['boton_regresar'].setGeometry(120, 410, 250, 40)
-        self.widgets['boton_regresar'].setStyleSheet("""
-            QPushButton {
-                background-color: #ff9800;
-                color: black;
-                border: none;
-                border-radius: 20px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #e68900;
-            }
-        """)
-        self.widgets['boton_regresar'].setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        self.widgets['boton_regresar'].clicked.connect(self.restore_callback)
-
-        # Mostrar todos los widgets
-        for widget in self.widgets.values():
-            widget.show()
-
-    def save(self):
+    def _load_data(self):
+        """ Carga los datos actuales del usuario en los campos del formulario. """
         try:
-            nueva_estatura = self.widgets['entry_estatura'].text().replace(" cm", "").strip()
-            nueva_meta_calorias = self.widgets['entry_obj'].text().strip()
-            nuevo_nivel_actividad = self.widgets['combobox_nvl'].currentText()
-
-            edad, genero, peso, nivel_actividad, meta_cal, estatura = self.user_service.cargar_datos_usuario()
-
-            if (nueva_estatura == str(estatura) and
-                nueva_meta_calorias == str(meta_cal) and
-                nuevo_nivel_actividad == nivel_actividad):
-                MessageHandler.mostrar_info("Sin Cambios", "No se han realizado cambios.")
-                return
-
-            exito = self.user_service.actualizar_datos(nueva_estatura, nueva_meta_calorias, nuevo_nivel_actividad)
-
-            if exito:
-                MessageHandler.mostrar_info("Confirmación", "Datos actualizados correctamente.")
-                self.restore_callback()
+            _, _, _, nivel_actividad, meta_cal, estatura = self.user_service.cargar_datos_usuario()
+            self.estatura_input.setText(str(estatura))
+            self.objetivo_input.setText(str(meta_cal))
+            self.actividad_combo.setCurrentText(nivel_actividad)
         except Exception as e:
-            MessageHandler.mostrar_advertencia("Error", f"Hubo un problema: {e}")
+            QMessageBox.critical(self, "Error", f"No se pudieron cargar los datos del usuario: {e}")
 
-    def hide_widgets(self):
-        """Ocultar todos los widgets del formulario"""
-        for widget in self.widgets.values():
-            widget.hide()
+    def get_data(self):
+        """ Retorna los datos del formulario para ser guardados. """
+        return {
+            "estatura": self.estatura_input.text(),
+            "meta_cal": self.objetivo_input.text(),
+            "nivel_actividad": self.actividad_combo.currentText()
+        }

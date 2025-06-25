@@ -15,8 +15,18 @@ class UserService:
     def cargar_datos_usuario(self):
         return obtener_datos_usuario(self.usuario)
 
-    def actualizar_datos(self, estatura, meta_calorias, nivel_actividad):
+    def actualizar_datos(self, nuevos_datos: dict):
+        """
+        Desempaqueta el diccionario de datos y llama a la función de la base de datos.
+        """
+        # Extraemos los valores del diccionario que nos llega desde la interfaz
+        estatura = nuevos_datos.get('estatura')
+        meta_calorias = nuevos_datos.get('meta_cal')
+        nivel_actividad = nuevos_datos.get('nivel_actividad')
+        
+        # Llamamos a la función que trabaja con la BD, ahora con los valores separados
         return actualizar_datos_usuario(self.usuario, estatura, meta_calorias, nivel_actividad)
+
 
     def actualizar_contrasena(self, contra_anterior, nueva_contra):
         return actualizar_contrasena(self.usuario, contra_anterior, nueva_contra)

@@ -287,9 +287,56 @@ class MainWindow(QMainWindow):
         self.stacked_widget.addWidget(self.menu)
         
         layout.addWidget(self.stacked_widget)
-        
+        self.conectar_modulos()
+
         return content_frame
     
+    def conectar_modulos(self):
+        """Conecta las señales de los diferentes módulos a los slots de otros."""
+        print("Realizando conexiones entre módulos...")
+
+        if hasattr(self.agregar_alimento, 'catalogo_alimentos_actualizado') and \
+           hasattr(self.registrar_alimento, 'refrescar_lista_alimentos'):
+            
+            self.agregar_alimento.catalogo_alimentos_actualizado.connect(
+                self.registrar_alimento.refrescar_lista_alimentos
+            )
+            print("CONEXIÓN CREADA: Agregar Alimento -> Registrar Alimento (ComboBox)")
+
+        # --- OTRAS CONEXIONES ÚTILES QUE PREPARAMOS ---
+        # Cuando se registra un consumo diario...
+        if hasattr(self.registrar_alimento, 'consumo_diario_actualizado'):
+            # ... se refresca la vista del Historial.
+            if hasattr(self.historial, 'refrescar_vista'):
+                self.registrar_alimento.consumo_diario_actualizado.connect(
+                    self.historial.refrescar_vista
+                )
+                print("CONEXIÓN CREADA: Registrar Alimento -> Historial")
+            
+            # ... y también se refresca la vista de Salud (para el progreso de calorías).
+            if hasattr(self.salud, 'refrescar_vista'):
+                self.registrar_alimento.consumo_diario_actualizado.connect(
+                    self.salud.refrescar_vista
+                )
+                print("CONEXIÓN CREADA: Registrar Alimento -> Salud")
+
+        # 4. Cuando Configuración actualiza los datos del usuario...
+        # ... se refresca la vista de Salud.
+        if hasattr(self.settings, 'datos_usuario_actualizados') and hasattr(self.salud, 'refrescar_vista'):
+            self.settings.datos_usuario_actualizados.connect(
+                self.salud.refrescar_vista
+            )
+            print("CONEXIÓN CREADA: Configuración -> Salud")
+
+        # 5. Y cuando Salud actualiza datos (ej: el peso)...
+        # ... se refresca la vista de Configuración.
+        if hasattr(self.salud, 'datos_usuario_actualizados') and hasattr(self.settings, 'refrescar_vista'):
+            self.salud.datos_usuario_actualizados.connect(
+                self.settings.refrescar_vista
+            )
+            print("CONEXIÓN CREADA: Salud -> Configuración")
+
+
     def create_header(self):
         """Crear la barra superior"""
         header = QFrame()

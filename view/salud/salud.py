@@ -1,16 +1,16 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QFrame, QMessageBox, QGridLayout)
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from view.agregar_recordatorio.agregar_recordatorio import Agregar_Recordatorio
 from model.salud.update_peso import Peso
 from controller.pulsaciones.pulsaciones import Pulsaciones
 from model.salud.calculos import Calculo
-from model.salud.progreso import ProgresoSalud
 from model.salud.GerminiChatWindow import GeminiChatWindow
 from model.util.usuario_manager import UsuarioManager, BaseWidget
 from model.salud.AguaManager import AguaManager
 from model.util.colores import *
 from model.util.mensajes import *
+from .progreso_calorias_widget import ProgresoCaloriasWidget
 
 class InfoButton(QPushButton):
     """Botón de información personalizado"""
@@ -68,6 +68,9 @@ class MetricFrame(QFrame):
         layout.addWidget(self.info_button, 0, 2)
 
 class Salud(QWidget, BaseWidget):
+
+    datos_usuario_actualizados = pyqtSignal()
+
     def __init__(self, parent=None, usuario=None): 
         QWidget.__init__(self, parent)  # Llama al constructor explícito de QWidget
         BaseWidget.__init__(self, parent=parent, usuario=usuario)  # Y luego el de BaseWidget
@@ -88,9 +91,7 @@ class Salud(QWidget, BaseWidget):
         self.setup_styles()
         self.actualizar_datos_usuario()
         self.update_health_metrics(show_alerts=False)
-        self.obtener_datos_usuario_bd()
-        self.progreso_salud = ProgresoSalud(self.frame_graficos, self.usuario)
-        
+        self.obtener_datos_usuario_bd()        
         # AGREGAR ESTAS LÍNEAS PARA INICIALIZAR EL AGUA MANAGER
         self.init_agua_manager()
 
@@ -185,19 +186,21 @@ class Salud(QWidget, BaseWidget):
             self.frame_tmb = MetricFrame("TMB")
             self.frame_tmb.info_button.clicked.connect(self.mostrar_info_tmb)
             right_layout.addWidget(self.frame_tmb)
-            
+                    
+            # --- Reemplazo para el código anterior en salud.py ---
             # Frame de progreso
             self.frame_graficos = QFrame()
-            self.frame_graficos.setFixedSize(300, 200)
+            # Ajustamos la altura, ya que no hay gráfico de torta
+            self.frame_graficos.setFixedHeight(120) 
             self.frame_graficos.setStyleSheet("background-color: #34495E; border-radius: 10px;")
-            
-            graficos_layout = QVBoxLayout(self.frame_graficos)
-            self.lbl_graficos = QLabel("Progreso de Salud")
-            self.lbl_graficos.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.lbl_graficos.setStyleSheet("color: white; font-weight: bold; font-size: 14px; margin: 10px;")
-            graficos_layout.addWidget(self.lbl_graficos)
-            
             right_layout.addWidget(self.frame_graficos)
+
+            # ¡AQUÍ LA INTEGRACIÓN!
+            # Creamos nuestro nuevo widget de progreso y lo añadimos al frame.
+            self.progreso_calorias_widget = ProgresoCaloriasWidget(self.usuario)
+            container_layout = QVBoxLayout(self.frame_graficos)
+            container_layout.setContentsMargins(0, 0, 0, 0)
+            container_layout.addWidget(self.progreso_calorias_widget)
             right_layout.addStretch()
             
             
@@ -431,11 +434,12 @@ class Salud(QWidget, BaseWidget):
             # Crear y mostrar la ventana de actualización de peso
             peso_dialog = Peso(parent=self, usuario=self.usuario, callback=update_and_refresh)
             
-            # Conectar la señal peso_actualizado para actualizar métricas
+            # Código corregido en actualizar_peso()
             peso_dialog.peso_actualizado.connect(lambda: [
                 self.update_health_metrics(show_alerts=True),
-                self.progreso_salud.refrescar() if hasattr(self, 'progreso_salud') else None
-            ])            
+                self.progreso_calorias_widget.refresh() if hasattr(self, 'progreso_calorias_widget') else None,
+                self.datos_usuario_actualizados.emit()
+            ])        
             # Ejecutar el diálogo
             result = peso_dialog.exec()
             

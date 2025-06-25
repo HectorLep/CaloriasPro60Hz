@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QFrame, QMessageBox,
                              QDialog, QLineEdit, QApplication)
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont
 from controller.recordatorio.recordatorio_core import Recordatorio
 from model.configuracion.servicios_usuario import UserService
@@ -96,7 +96,7 @@ class ConfigButton(QPushButton):
 
 class DangerButton(QPushButton):
     """Botón de peligro personalizado"""
-    def __init__(self, text, width=260, height=55, parent=None):
+    def __init__(self, text, width=200, height=40, parent=None):
         super().__init__(text, parent)
         self.setFixedSize(width, height)
         self.setStyleSheet(f"""
@@ -203,6 +203,8 @@ class PasswordDialog(QDialog):
         self.cancel_btn.clicked.connect(self.reject)
 
 class ConfigUI(QWidget, BaseWidget):
+    datos_usuario_actualizados = pyqtSignal()
+
     def __init__(self, panel_principal, color, usuario=None):
         QWidget.__init__(self, panel_principal)
         BaseWidget.__init__(self, parent=panel_principal, usuario=usuario)
@@ -216,6 +218,22 @@ class ConfigUI(QWidget, BaseWidget):
         
         self.init_ui()
         self.setup_styles()
+        
+    def refrescar_vista(self):
+        """
+        Slot público que recarga la información del usuario en el panel.
+        """
+        print("RECIBIENDO SEÑAL: Refrescando vista de Configuración...")
+        # Limpiamos el layout del panel de info y lo volvemos a cargar
+        # Esta es la forma más simple de asegurar que los datos estén frescos.
+        while self.info_layout.count():
+            child = self.info_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+        
+        # Volvemos a cargar los datos y botones
+        self.load_user_data(self.info_layout)
+        self.create_session_buttons(self.info_layout)
 
     def get_current_user(self):
         """Obtiene el usuario actual"""
@@ -340,7 +358,7 @@ class ConfigUI(QWidget, BaseWidget):
         buttons_layout.addWidget(self.mostrar_contra_button)
         
         # Botón configurar recordatorio
-        self.config_peso_button = ConfigButton("Configurar Recordatorio Peso", width=380)
+        self.config_peso_button = ConfigButton("Configurar Recordatorio Peso")
         self.config_peso_button.clicked.connect(self.mostrar_formulario_recordatorio)
         buttons_layout.addWidget(self.config_peso_button)
         
@@ -373,15 +391,14 @@ class ConfigUI(QWidget, BaseWidget):
             }
         """)
         
-        inner_layout = QVBoxLayout(inner_frame)
-        inner_layout.setSpacing(12)
-        inner_layout.setContentsMargins(20, 20, 20, 20)
+        # CAMBIO: Guardamos una referencia al layout interno
+        self.info_layout = QVBoxLayout(inner_frame)
+        self.info_layout.setSpacing(12)
+        self.info_layout.setContentsMargins(20, 20, 20, 20)
         
-        # Cargar datos del usuario
-        self.load_user_data(inner_layout)
-        
-        # Botones de sesión
-        self.create_session_buttons(inner_layout)
+        # Cargar datos del usuario y botones
+        self.load_user_data(self.info_layout)
+        self.create_session_buttons(self.info_layout)
         
         outer_layout.addWidget(inner_frame)
         parent_layout.addWidget(outer_frame)
@@ -447,7 +464,7 @@ class ConfigUI(QWidget, BaseWidget):
         """Muestra un mensaje informativo"""
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle(titulo)
-        msg_box.setText(mensaje)
+        msg_box.setText(mensaje)    
         msg_box.setIcon(QMessageBox.Icon.Information)
         msg_box.exec()
 
@@ -459,46 +476,44 @@ class ConfigUI(QWidget, BaseWidget):
         )
 
     def mostrar_interfaz_guardar(self):
-        """Muestra la interfaz para guardar datos"""
-        self.guardar_button.setEnabled(False)
-        self.mostrar_contra_button.setEnabled(False)
-        self.config_peso_button.setEnabled(False)
+        """Muestra el diálogo para guardar datos."""
+        dialog = UpdateUserForm(self.user_service, self)
         
-        try:
-            self.form_handler = UpdateUserForm(self, self.user_service, self.restaurar_interfaz_actualizar_info)
-            self.form_handler.create_form()
-        except Exception as e:
-            self.mostrar_error(f"Error al abrir formulario: {str(e)}")
-            self.restaurar_interfaz_actualizar_info()
-
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            nuevos_datos = dialog.get_data()
+            try:
+                # --- LÍNEA CLAVE A CORREGIR Y DESCOMENTAR ---
+                # Llamamos al método del servicio que acabamos de arreglar.
+                exito_al_guardar = self.user_service.actualizar_datos(nuevos_datos)
+                
+                if exito_al_guardar:
+                    QMessageBox.information(self, "Éxito", "La información ha sido actualizada.")
+                    
+                    # Refrescamos la vista actual y avisamos a los demás módulos
+                    self.refrescar_vista()
+                    self.datos_usuario_actualizados.emit()
+                else:
+                    self.mostrar_error("Error de Guardado", "No se pudieron guardar los cambios en la base de datos.")
+                
+            except Exception as e:
+                self.mostrar_error(f"Error al procesar los datos: {e}")
+                
     def mostrar_formulario_contrasena(self):
-        """Muestra el formulario de contraseña"""
+        """Muestra el diálogo para cambiar la contraseña."""
         try:
-            self.form_handler = PasswordForm(self.panel_principal, self.user_service)
-            self.form_handler.create_form()
+            dialog = PasswordForm(self.user_service, self)
+            dialog.exec()
         except Exception as e:
             self.mostrar_error(f"Error al abrir formulario de contraseña: {str(e)}")
 
     def mostrar_formulario_recordatorio(self):
-        """Muestra el formulario de recordatorio"""
+        """Muestra el diálogo para configurar el recordatorio."""
         try:
-            self.form_handler = ReminderForm(self.panel_principal, self.user_service)
-            self.form_handler.create_form()
+            dialog = ReminderForm(self.user_service, self)
+            dialog.exec()
         except Exception as e:
             self.mostrar_error(f"Error al abrir formulario de recordatorio: {str(e)}")
-
-    def restaurar_interfaz_actualizar_info(self):
-        """Restaura la interfaz después de actualizar información"""
-        self.guardar_button.setEnabled(True)
-        self.mostrar_contra_button.setEnabled(True)
-        self.config_peso_button.setEnabled(True)
-        
-        # Recargar datos del usuario
-        try:
-            self.recreate_user_info()
-        except Exception as e:
-            print(f"Error al recargar datos: {e}")
-
+                                                
     def recreate_user_info(self):
         """Recrea la información del usuario"""
         # Esta función debería actualizar solo la sección de información del usuario

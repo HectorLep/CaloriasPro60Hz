@@ -15,7 +15,8 @@ from model.util.mensajes import *
 
 class RegistroAlimentoPyQt6(QWidget):
     """Clase principal para el registro de alimentos"""
-    
+    consumo_diario_actualizado = pyqtSignal()
+
     def __init__(self, usuario="test_user", parent=None):
         super().__init__(parent)
         self.usuario = usuario
@@ -55,6 +56,37 @@ class RegistroAlimentoPyQt6(QWidget):
         self.setup_connections()
         self.update_initial_info()
     
+
+    # --- MÉTODO NUEVO (SLOT) ---
+    def refrescar_lista_alimentos(self):
+        """
+        Este es el SLOT que se conectará a la señal.
+        Recarga la lista de alimentos en el ComboBox.
+        """
+        print("RECIBIENDO SEÑAL: Refrescando lista de alimentos...")
+        
+        try:
+            # 1. Guardar la selección actual del usuario, si hay una
+            texto_actual = self.combo_box.currentText()
+            
+            # 2. Limpiar el ComboBox completamente
+            self.combo_box.clear()
+            
+            # 3. Añadir el item placeholder inicial
+            self.combo_box.addItem("Seleccionar alimento")
+            
+            # 4. Cargar la lista FRESCA de alimentos desde la base de datos
+            alimentos_actualizados = self.repository.cargar_alimentos()
+            self.combo_box.addItems(alimentos_actualizados)
+            
+            # 5. Intentar restaurar la selección del usuario
+            # Si el alimento que tenía seleccionado sigue existiendo, lo vuelve a poner.
+            if texto_actual in alimentos_actualizados:
+                self.combo_box.setCurrentText(texto_actual)
+
+        except Exception as e:
+            print(f"Error al refrescar la lista de alimentos: {e}")
+
     def setup_ui(self):
         """Configura la interfaz de usuario"""
         
