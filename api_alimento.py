@@ -17,7 +17,7 @@ app = FastAPI(
 
 # --- Constantes ---
 DB_FILE = "alimentos_app.db" # Renombramos para mayor claridad
-EDAMAM_APP_ID = os.getenv("EDAMAM_APP_ID")
+EDAMAM_APP_ID = os.getenv("EDAMAM_APP_ID")  
 EDAMAM_APP_KEY = os.getenv("EDAMAM_APP_KEY")
 
 # --- Lógica de Base de Datos del Servidor ---
