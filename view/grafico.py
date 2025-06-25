@@ -65,7 +65,7 @@ class SimpleChart(QWidget):
             y = self.height() - margin - bar_height
             
             painter.setBrush(QBrush(colors[i % len(colors)]))
-            painter.drawRect(x + 5, y, bar_width - 10, bar_height)
+            painter.drawRect(int(x + 5), int(y), int(bar_width - 10), int(bar_height))
             
             # Dibujar etiqueta
             painter.setPen(Qt.GlobalColor.white)
