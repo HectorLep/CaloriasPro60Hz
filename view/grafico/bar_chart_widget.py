@@ -1,6 +1,4 @@
-# view/widgets/bar_chart_widget.py
-
-from PyQt6.QtWidgets import QWidget, QSizePolicy # <-- IMPORTANTE: Añadir QSizePolicy
+from PyQt6.QtWidgets import QWidget, QSizePolicy 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPainter, QPen, QBrush, QFont, QColor
 
@@ -10,11 +8,8 @@ class BarChartWidget(QWidget):
         super().__init__()
         self.data = []
         self.labels = []
-        
-        # --- SOLUCIÓN AL TAMAÑO: Le decimos al widget que se expanda verticalmente ---
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
-        
-        self.bar_color = QColor("#00bcd4") # Color cian por defecto
+        self.bar_color = QColor("#00bcd4") 
 
     def set_data(self, data, labels):
         self.data = data
@@ -28,7 +23,7 @@ class BarChartWidget(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.fillRect(self.rect(), QColor("#3c3c3c")) # Fondo consistente con tu UI
+        painter.fillRect(self.rect(), QColor("#3c3c3c")) # Fondo consistente
 
         if not self.data:
             painter.setPen(QColor("#ffffff"))
@@ -39,20 +34,13 @@ class BarChartWidget(QWidget):
 
     def draw_bar_chart(self, painter):
         margin_top, margin_bottom, margin_right, margin_left = 50, 50, 50, 80
-        
         chart_width = self.width() - margin_left - margin_right
         chart_height = self.height() - margin_top - margin_bottom
-        
         max_value = max(self.data) if self.data else 1
-        
-        # --- MEJORA ESTÉTICA: Lógica para que las barras no sean demasiado anchas ---
         num_bars = len(self.data) if len(self.data) > 0 else 1
-        # Calculamos el ancho ideal pero lo limitamos a un máximo de 60px
         bar_width = min(60, chart_width // num_bars)
-        # Centramos el grupo de barras si no ocupan todo el ancho
         total_bars_width = num_bars * bar_width
         x_offset = (chart_width - total_bars_width) / 2
-        # --- FIN DE LA MEJORA ---
         
         # --- DIBUJAR EJE Y ---
         painter.setPen(QPen(QColor("#ffffff")))
@@ -73,7 +61,7 @@ class BarChartWidget(QWidget):
         
         for i, value in enumerate(self.data):
             bar_height = (value / max_value) * chart_height if max_value > 0 else 0
-            x = margin_left + x_offset + i * bar_width # <-- Usamos el offset
+            x = margin_left + x_offset + i * bar_width 
             y = self.height() - margin_bottom - bar_height
             
             painter.setBrush(bar_fill_color)

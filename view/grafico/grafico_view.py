@@ -1,13 +1,9 @@
-# view/grafico_view.py
-
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QComboBox, QGroupBox)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor # <-- IMPORTANTE: Añadir QColor
-
-# Importamos los nuevos componentes
-from view.widgets.bar_chart_widget import BarChartWidget
-from model.database_manager import ChartDataManager
+from PyQt6.QtGui import QFont, QColor 
+from .bar_chart_widget import BarChartWidget
+from model.grafico.database_manager import ChartDataManager
 
 class GraficoView(QWidget):
     """
@@ -42,7 +38,6 @@ class GraficoView(QWidget):
         title = QLabel("Gráficos y Estadísticas")
         title.setFont(QFont("Arial", 24, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # Hacemos el título un poco menos dominante
         title.setFixedHeight(50)
         layout.addWidget(title)
         
@@ -71,8 +66,6 @@ class GraficoView(QWidget):
         chart_layout = QVBoxLayout(self.chart_group)
         self.main_chart = BarChartWidget()
         chart_layout.addWidget(self.main_chart)
-        
-        # El layout principal ahora tiene el gráfico
         layout.addWidget(self.chart_group)
 
     def update_chart(self):
@@ -87,13 +80,11 @@ class GraficoView(QWidget):
         if fetch_function:
             labels, data = fetch_function(period=periodo)
             
-            # --- SOLUCIÓN A LOS COLORES: Paleta temática ---
-            color = QColor("#FF9800") # Naranja para Calorías por defecto
+            color = QColor("#FF9800") 
             if tipo_dato == "Consumo de Agua":
-                color = QColor("#03A9F4") # Azul para Agua
+                color = QColor("#03A9F4")
             elif tipo_dato == "Registro de Peso":
-                color = QColor("#9C27B0") # Púrpura para Peso
-            # -----------------------------------------------
-
+                color = QColor("#9C27B0") 
+                
             self.main_chart.set_bar_color(color)
             self.main_chart.set_data(data, labels)
