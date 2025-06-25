@@ -7,8 +7,6 @@ Pantalla de bienvenida con banner
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPainter, QPen
-# --- LÍNEA CORREGIDA ---
-from PyQt6.QtSvgWidgets import QSvgWidget
 
 class WelcomeScreen(QWidget):
     def __init__(self):
@@ -76,11 +74,8 @@ class WelcomeScreen(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Dibujar algunas formas decorativas simples
         pen = QPen()
         pen.setColor(Qt.GlobalColor.white)
         pen.setWidth(2)
         painter.setPen(pen)
         
-        # Aquí podrías dibujar más elementos decorativos
-        # similares a las frutas de tu imagen original

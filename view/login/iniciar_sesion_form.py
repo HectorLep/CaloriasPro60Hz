@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit,
                              QComboBox, QFrame, QMessageBox)
 from PyQt6.QtGui import QFont, QPalette, QColor
-from PyQt6.QtCore import Qt, QDate, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from model.login.auth_service import IAuthService
 from model.util.colores import *
 from .form import *

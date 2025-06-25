@@ -399,9 +399,8 @@ class MainWindow(QMainWindow):
     def on_login_success(self, username):
         """Callback cuando el login es exitoso"""
         self.current_user = username
-        self.setup_main_interface()
-        
-        # Mostrar la interfaz principal
+        self.setup_main_interface() 
+        self.sidebar.set_usuario(self.current_user)
         self.show_main()
     
     def logout(self):

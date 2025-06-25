@@ -60,7 +60,8 @@ class UserDatabase(IUserDatabase):
                         edad INTEGER,
                         recordatorio TEXT,
                         cantidad_dias VARCHAR,
-                        ultimo_msj TEXT 
+                        ultimo_msj TEXT,
+                        profile_pic_path TEXT
                     )
                 ''',
                 'mensajes': '''
