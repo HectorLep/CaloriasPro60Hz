@@ -9,9 +9,10 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QLabel, QFrame, QStackedWidget)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont
+from model.database_manager import ChartDataManager
+from view.grafico_view import GraficoView
 from ..sidebar import Sidebar
 from .welcome_screen import WelcomeScreen
-from ..grafico import Grafico
 from ..menu import Menu
 from view.salud.salud import Salud
 from controller.configuracion.configuracion import ConfigUI
@@ -256,21 +257,25 @@ class MainWindow(QMainWindow):
         self.welcome_screen = WelcomeScreen()
         self.registrar_alimento = RegistroAlimentoPyQt6(usuario=self.current_user)
         
-        # INSTANCIACIÓN CORREGIDA DE AGREGAR ALIMENTO
-        # Pasamos los parámetros requeridos: panel_principal, color, usuario
         self.agregar_alimento = Agregar_Alimento(
             panel_principal=self.stacked_widget,
             color="#3c3c3c",
             usuario=self.current_user
         )
         
-        self.grafico = Grafico()
-        # Por esta:
+        # --- INICIO DEL CAMBIO IMPORTANTE ---
+        # 1. Creamos una única instancia del gestor de datos
+        self.data_manager = ChartDataManager(username=self.current_user)
+
+        # 2. Creamos la nueva vista del gráfico, inyectando el gestor de datos
+        self.graficos_view = GraficoView(data_provider=self.data_manager)
+        # --- FIN DEL CAMBIO IMPORTANTE ---
+
         self.historial = Historial(
             panel_principal=self.stacked_widget,
             color="#3c3c3c", 
             usuario=self.current_user
-)
+        )
         self.settings = ConfigUI(self, "#3c3c3c", self.current_user)
         
         self.salud = Salud()
@@ -280,7 +285,8 @@ class MainWindow(QMainWindow):
         self.stacked_widget.addWidget(self.welcome_screen)
         self.stacked_widget.addWidget(self.registrar_alimento)
         self.stacked_widget.addWidget(self.agregar_alimento)
-        self.stacked_widget.addWidget(self.grafico)
+        # self.grafico = Grafico() <-- Se elimina esta línea
+        self.stacked_widget.addWidget(self.graficos_view) # <-- Se añade la nueva vista
         self.stacked_widget.addWidget(self.historial)
         self.stacked_widget.addWidget(self.settings)
         self.stacked_widget.addWidget(self.salud)
@@ -440,31 +446,26 @@ class MainWindow(QMainWindow):
                     "welcome_method": "mostrar_mensaje_bienvenida",
                     "db_column": "registrar_alimento"
                 },
-                # --- INICIO DE LÍNEAS A AGREGAR ---
                 "settings": {
                     "widget": self.settings,
                     "welcome_method": "mostrar_mensaje_inicial",
-                    "db_column": "configuracion"  # Nombre de la columna en la BD
+                    "db_column": "configuracion"
                 },
                 "agregar": {
                     "widget": self.agregar_alimento,
                     "welcome_method": "_mostrar_mensaje_bienvenida",
-                    "db_column": "agregar_alimento"  # Nombre de la columna en la BD
+                    "db_column": "agregar_alimento"
                 }
-                # --- FIN DE LÍNEAS A AGREGAR ---
             }
 
             if section_name in section_details:
                 details = section_details[section_name]
                 db_column_name = details["db_column"]
 
-                # 1. Revisar caché en memoria primero
                 if db_column_name not in self.welcome_message_flags:
-                    # 2. Si no está en caché, consultar la base de datos
                     status = self.check_message_status(db_column_name)
                     self.welcome_message_flags[db_column_name] = status
 
-                # 3. Si el estado es 0 (no mostrado), mostrar el mensaje
                 if self.welcome_message_flags[db_column_name] == 0:
                     widget = details["widget"]
                     method_name = details["welcome_method"]
@@ -473,11 +474,10 @@ class MainWindow(QMainWindow):
                         welcome_method = getattr(widget, method_name)
                         welcome_method()
                     
-                    # 4. Actualizar la base de datos y el caché
                     self.update_message_status(db_column_name)
                     self.welcome_message_flags[db_column_name] = 1
 
-            # --- Lógica original para cambiar de vista ---
+            # Lógica para cambiar de vista. El índice de 'grafico' (3) ahora corresponde a 'graficos_view'
             section_map = {
                 "welcome": 0, "registrar": 1, "agregar": 2, "grafico": 3,
                 "historial": 4, "settings": 5, "salud": 6, "menu": 7
