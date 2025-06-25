@@ -1,6 +1,6 @@
 # ⚡ CaloriasPro60Hz ⚡
 
-![Banner o Screenshot Principal de la App](https://placehold.co/1200x600/1a1a1a/ffffff?text=Interfaz+de+CaloriasPro60Hz)
+![Banner o Screenshot Principal de la App](./assets/interfaz.png)
 > Una aplicación de escritorio para Linux y Windows, construida en Python, para el seguimiento integral de tu salud y nutrición.
 
 ---
@@ -99,18 +99,6 @@ Sigue estos pasos para instalar y ejecutar el proyecto en un entorno local.
     python main.py
     ```
     *(Reemplaza `main.py` por el nombre de tu script principal si es diferente)*
-
----
-
-## 📸 Screenshots de la Aplicación
-
-Como no hay "Demo en Vivo" para una app de escritorio, aquí puedes ver cómo luce:
-
-**Pantalla Principal / Dashboard**
-![Dashboard](https://placehold.co/800x600/1a1a1a/ffffff?text=Dashboard+Principal)
-
-**Módulo de Salud con Asistente IA**
-![Pulso](https://placehold.co/800x600/1a1a1a/ffffff?text=Módulo+de+Salud)
 
 ---
 
