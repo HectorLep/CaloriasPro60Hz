@@ -1,13 +1,13 @@
 # ⚡ CaloriasPro60Hz ⚡
 
-![Banner o Screenshot Principal de la App](https://placehold.co/1200x600/1a1a1a/ffffff?text=Interfaz+de+CaloriasPro60Hz)
+[![Banner o Screenshot Principal de la App](https://github.com/HectorLep/CaloriasPro60Hz/raw/master/assets/interfaz.png)](https://github.com/HectorLep/CaloriasPro60Hz/raw/master/assets/interfaz.png)
 > Una aplicación de escritorio para Linux y Windows, construida en Python, para el seguimiento integral de tu salud y nutrición.
 
 ---
 
 ## 📝 Descripción del Proyecto
 
-**CaloriasPro60Hz** es una aplicación de escritorio multiplataforma (Linux/Windows) desarrollada en Python como proyecto para la asignatura `[Nombre de la Asignatura]` en la `[Nombre de tu Universidad]`.
+**CaloriasPro60Hz** es una aplicación de escritorio multiplataforma (Linux/Windows) desarrollada en Python como proyecto para la asignatura `Diseño de Software` en la `Universidad Catolica de Temuco`.
 
 A diferencia de las soluciones web, esta aplicación se ejecuta de forma nativa en tu sistema operativo, ofreciendo una experiencia rápida y fluida. El objetivo es proporcionar una herramienta robusta y centralizada para que los usuarios puedan monitorear su ingesta calórica, medir su pulso, y calcular métricas de salud clave como el IMC y la TMB, todo desde una única interfaz gráfica.
 
@@ -51,10 +51,11 @@ CaloriasPro60Hz está organizado en módulos para una gestión completa de tu sa
 * **Lenguaje:** `Python 3.10+`
 * **Interfaz Gráfica (GUI):** `PyQt6`
 * **Librerías Clave:**
-    * `[Ej: OpenCV-Python]` para la medición del pulso.
-    * `[Ej: NumPy / Pandas]` para cálculos y manipulación de datos.
-    * `[Ej: Matplotlib / pyqtgraph]` para generar gráficos.
-    * `[Menciona cualquier otra librería importante aquí]`
+    * `PyQt6-Charts` para la generación de gráficos y estadísticas.
+    * `google-genai` para la integración con el Asistente IA.
+    * `FastAPI` y `uvicorn` para servir el modelo de IA de forma local.
+    * `NumPy` para cálculos numéricos y manipulación de datos.
+    * `python-dotenv` para la gestión de variables de entorno (como API Keys).
 
 ---
 
@@ -71,46 +72,33 @@ Sigue estos pasos para instalar y ejecutar el proyecto en un entorno local.
 ### Instalación
 
 1.  **Clona el repositorio:**
-    ```bash
-    git clone [https://github.com/](https://github.com/)[tu-usuario]/CaloriasPro60Hz.git
-    ```
+    ````bash
+    git clone [https://github.com/HectorLep/CaloriasPro60Hz.git](https://github.com/HectorLep/CaloriasPro60Hz.git)
+    ````
 2.  **Navega al directorio del proyecto:**
-    ```bash
+    ````bash
     cd CaloriasPro60Hz
-    ```
+    ````
 3.  **Crea y activa un entorno virtual (Recomendado):**
     * En **Linux / macOS**:
-        ```bash
+        ````bash
         python3 -m venv venv
         source venv/bin/activate
-        ```
+        ````
     * En **Windows**:
-        ```bash
+        ````bash
         python -m venv venv
         .\venv\Scripts\activate
-        ```
+        ````
 4.  **Instala las dependencias del proyecto:**
     *(Asegúrate de tener un archivo `requirements.txt` en tu repositorio)*
-    ```bash
+    ````bash
     pip install -r requirements.txt
-    ```
+    ````
 5.  **Ejecuta la aplicación:**
-    ```bash
+    ````bash
     python main.py
-    ```
-    *(Reemplaza `main.py` por el nombre de tu script principal si es diferente)*
-
----
-
-## 📸 Screenshots de la Aplicación
-
-Como no hay "Demo en Vivo" para una app de escritorio, aquí puedes ver cómo luce:
-
-**Pantalla Principal / Dashboard**
-![Dashboard](https://placehold.co/800x600/1a1a1a/ffffff?text=Dashboard+Principal)
-
-**Módulo de Salud con Asistente IA**
-![Pulso](https://placehold.co/800x600/1a1a1a/ffffff?text=Módulo+de+Salud)
+    ````
 
 ---
 
