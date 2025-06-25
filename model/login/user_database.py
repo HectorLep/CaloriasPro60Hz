@@ -7,35 +7,25 @@ class IUserDatabase(ABC):
     def crear_db_usuario(self, nombre_usuario):
         pass
 
-
 class UserDatabase(IUserDatabase):
     def crear_db_usuario(self, nombre_usuario):
-        """Crea la base de datos para un nuevo usuario."""
+        """
+        Crea la base de datos para un nuevo usuario, pero solo con las tablas
+        que se gestionan localmente, ya que alimentos y consumo ahora los maneja la API.
+        """
         directorio = f'./users/{nombre_usuario}'
         os.makedirs(directorio, exist_ok=True)
         
+        # ¡Corregido! Mantenemos el nombre original para no romper tu código.
+        db_path = f"{directorio}/alimentos.db"
+        
         try:
-            conn = sqlite3.connect(f"{directorio}/alimentos.db")
+            conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             
             tablas = {
-                'alimento': '''
-                    CREATE TABLE IF NOT EXISTS alimento (
-                        nombre TEXT NOT NULL,
-                        calorias_100gr INTEGER,
-                        calorias_porcion INTEGER
-                    )
-                ''',
-                'consumo_diario': '''
-                    CREATE TABLE IF NOT EXISTS consumo_diario (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        nombre TEXT NOT NULL,
-                        fecha TEXT NOT NULL,
-                        hora TEXT NOT NULL,
-                        cantidad INTEGER NOT NULL,
-                        total_cal REAL NOT NULL
-                    )
-                ''',
+                # Tablas de alimentos y consumo ELIMINADAS porque ahora las maneja la API.
+                
                 'peso': '''
                     CREATE TABLE IF NOT EXISTS peso (
                         num INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,11 +78,15 @@ class UserDatabase(IUserDatabase):
             
             for tabla in tablas.values():
                 cursor.execute(tabla)
-            cursor.execute("INSERT INTO mensajes DEFAULT VALUES")
+                
+            cursor.execute("SELECT COUNT(*) FROM mensajes")
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("INSERT INTO mensajes DEFAULT VALUES")
+                
             conn.commit()
             return True
         except Exception as e:
-            print(f"Error al crear base de datos: {e}")
+            print(f"Error al crear base de datos local del usuario: {e}")
             return False
         finally:
             if conn:
