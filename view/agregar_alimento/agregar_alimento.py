@@ -61,7 +61,6 @@ class CustomEntry(QLineEdit):
 
 
 class CustomComboBox(QComboBox):
-    """ComboBox personalizado"""
     def __init__(self, width=245, height=35, parent=None):
         super().__init__(parent)
         self.setFixedSize(width, height)
@@ -90,6 +89,7 @@ class CustomComboBox(QComboBox):
                 border: 1px solid #BDC3C7;
                 background-color: white;
                 selection-background-color: #3498DB;
+                margin-top: 5px;
             }}
         """)
 
@@ -151,7 +151,7 @@ class AgregarAlimentoView(QWidget):
     """Vista responsable únicamente de la interfaz gráfica (SRP)."""
     
     def __init__(self, parent_frame, color, on_agregar_callback, on_ayuda_callback):
-        super().__init__(parent_frame)
+        super().__init__()  # CAMBIAR: sin parent_frame aquí
         self.on_agregar_callback = on_agregar_callback
         self.on_ayuda_callback = on_ayuda_callback
         self._crear_widgets()
@@ -159,8 +159,8 @@ class AgregarAlimentoView(QWidget):
     def _crear_widgets(self):
         """Crea todos los widgets de la interfaz, usando un QGridLayout para alineación perfecta."""
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(20, 20, 20, 20)
-        self.layout.setSpacing(20)
+        self.layout.setContentsMargins(10, 10, 10, 10)  # Márgenes más pequeños 
+        self.layout.setSpacing(25) 
 
         # Header con botón de ayuda
         self._crear_header()
@@ -170,10 +170,8 @@ class AgregarAlimentoView(QWidget):
         grid_layout.setColumnStretch(0, 1) # Columna izquierda
         grid_layout.setColumnStretch(1, 1) # Columna derecha
         grid_layout.setColumnStretch(2, 2) # Columna vacía para centrar
-        grid_layout.setHorizontalSpacing(30)
-        
-        # LÍNEA AÑADIDA PARA DAR ESPACIO VERTICAL
-        grid_layout.setVerticalSpacing(25)
+        grid_layout.setHorizontalSpacing(50)  # Más espacio horizontal
+        grid_layout.setVerticalSpacing(35)    # Más espacio vertical
 
         # --- Widgets de la Columna Izquierda ---
         # Header "Agregar Alimentos"
@@ -224,15 +222,16 @@ class AgregarAlimentoView(QWidget):
         self.layout.addStretch(1) # Empuja todo hacia arriba
         self._crear_boton_api()
         self.layout.addStretch(2) # Más espacio abajo
-        
+            
     def _crear_header(self):
         header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)  # Sin márgenes del layout
         header_layout.addStretch()
         self.boton_ayuda = InfoButton("i")
         self.boton_ayuda.clicked.connect(self.on_ayuda_callback)
         header_layout.addWidget(self.boton_ayuda)
         self.layout.addLayout(header_layout)
-
+        
     def actualizar_interfaz(self, seleccion):
         """Muestra u oculta los widgets según la selección del ComboBox."""
         show_widgets = seleccion in ["Por porción", "100gr"]
@@ -248,13 +247,13 @@ class AgregarAlimentoView(QWidget):
 
     def _crear_boton_api(self):
         api_layout = QHBoxLayout()
+        api_layout.setContentsMargins(0, 0, 0, 0)  # Sin márgenes
         api_layout.addStretch()
         self.api = CustomButton("Buscar Calorías", width=200, height=40, bg_color="#2ECC71", hover_color="#27AE60", text_color="black")
         self.api.clicked.connect(self._abrir_api_calorias)
         api_layout.addWidget(self.api)
-        api_layout.addStretch()
         self.layout.addLayout(api_layout)
-
+        
     def _abrir_api_calorias(self):
         webbrowser.open("https://fitia.app/es/calorias-informacion-nutricional/")
     
@@ -299,14 +298,14 @@ class Agregar_Alimento(QWidget):
         self.factory = SqliteAlimentoFactory()
         self.alimento_service = self.factory.crear_alimento_service(self.usuario)
         self.notification_service = self.factory.crear_notification_service()
-    
+        
     def _crear_vista(self):
         """Crea la vista y establece los callbacks"""
         # Layout principal para todo el widget
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Frame principal con fondo
+        # Frame principal con fondo - CAMBIAR AQUÍ
         main_frame = QFrame()
         main_frame.setStyleSheet("""
             QFrame {
@@ -314,16 +313,24 @@ class Agregar_Alimento(QWidget):
                 border: none;
             }
         """)
+        
+        # AÑADIR ESTA LÍNEA para que el frame use todo el espacio
+        frame_layout = QVBoxLayout(main_frame)
+        frame_layout.setContentsMargins(0, 0, 0, 0)
+        
         main_layout.addWidget(main_frame)
         
-        # Crear la vista dentro del frame
+        # Crear la vista dentro del frame - CAMBIAR AQUÍ
         self.vista = AgregarAlimentoView(
-            parent_frame=main_frame,
+            parent_frame=main_frame,  # Sigue siendo main_frame
             color=self.color,
             on_agregar_callback=self._manejar_agregar_alimento,
             on_ayuda_callback=self._mostrar_ayuda
         )
         
+        # AÑADIR la vista al layout del frame
+        frame_layout.addWidget(self.vista)
+                
     def _mostrar_mensaje_bienvenida(self):
             """Muestra el mensaje de bienvenida desde el archivo central."""
             info = MENSAJES.get("agregar_alimento", {})
