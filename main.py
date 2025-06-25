@@ -11,14 +11,14 @@ from view.ventana_main.ventana_principal import MainWindow
 
 def main():
     app = QApplication(sys.argv)
-    
+
     # Configurar estilo de la aplicación
     app.setStyle('Fusion')
     
     # Crear y mostrar la ventana principal
     window = MainWindow()
     window.show()
-        
+                
     sys.exit(app.exec())
 
 if __name__ == "__main__":

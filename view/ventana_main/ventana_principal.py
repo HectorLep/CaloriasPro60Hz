@@ -15,7 +15,9 @@ from ..grafico import Grafico
 from ..menu import Menu
 from view.salud.salud import Salud
 from controller.configuracion.configuracion import ConfigUI
-from view.login.login_form import LoginForm, IniciarSesionForm, RegistroForm
+from view.login.login_form import LoginForm
+from view.login.iniciar_sesion_form import IniciarSesionForm
+from view.login.registro_form import RegistroForm
 from model.login.auth_service import AuthService
 from model.login.user_database import UserDatabase
 from model.util.base import DBManager
