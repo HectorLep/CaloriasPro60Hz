@@ -2,7 +2,7 @@
 import webbrowser
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QFrame, QLineEdit, QComboBox,
-                             QMessageBox)
+                             QMessageBox, QGridLayout)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from model.util.colores import *
 from model.util.mensajes import *
@@ -145,213 +145,130 @@ class InfoButton(QPushButton):
         """)
 
 
+# En agregar_alimento.py
+
 class AgregarAlimentoView(QWidget):
-    """Vista responsable únicamente de la interfaz gráfica (SRP)"""
+    """Vista responsable únicamente de la interfaz gráfica (SRP)."""
     
     def __init__(self, parent_frame, color, on_agregar_callback, on_ayuda_callback):
         super().__init__(parent_frame)
-        self.color = color
         self.on_agregar_callback = on_agregar_callback
         self.on_ayuda_callback = on_ayuda_callback
         self._crear_widgets()
     
     def _crear_widgets(self):
-        """Crea todos los widgets de la interfaz"""
-        # Layout principal con más espaciado
+        """Crea todos los widgets de la interfaz, usando un QGridLayout para alineación perfecta."""
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(30, 30, 30, 30)  # Más margen general
-        self.layout.setSpacing(30)  # Más espacio entre secciones principales
-        
+        self.layout.setContentsMargins(20, 20, 20, 20)
+        self.layout.setSpacing(20)
+
         # Header con botón de ayuda
         self._crear_header()
         
-        # Contenido principal
-        self._crear_contenido_principal()
+        # --- Usaremos un QGridLayout para alinear las columnas ---
+        grid_layout = QGridLayout()
+        grid_layout.setColumnStretch(0, 1) # Columna izquierda
+        grid_layout.setColumnStretch(1, 1) # Columna derecha
+        grid_layout.setColumnStretch(2, 2) # Columna vacía para centrar
+        grid_layout.setHorizontalSpacing(30)
         
-        # Espaciador antes del botón API
-        self.layout.addSpacing(40)  # Espacio extra antes del botón API
+        # LÍNEA AÑADIDA PARA DAR ESPACIO VERTICAL
+        grid_layout.setVerticalSpacing(25)
+
+        # --- Widgets de la Columna Izquierda ---
+        # Header "Agregar Alimentos"
+        self.header_nombre = HeaderFrame()
+        layout_nombre = QVBoxLayout(self.header_nombre)
+        layout_nombre.addWidget(HeaderLabel("Agregar Alimentos"))
         
-        # Botón API
+        # Entry para el nombre del alimento
+        self.entry_nombre = CustomEntry(placeholder="Ingrese el nombre del alimento")
+        
+        # --- Widgets Ocultos de Calorías ---
+        self.header_calorias = HeaderFrame()
+        layout_calorias = QVBoxLayout(self.header_calorias)
+        self.label_cant_calorias = HeaderLabel("Calorías")
+        layout_calorias.addWidget(self.label_cant_calorias)
+        
+        self.entry_calorias = CustomEntry(placeholder="Ingrese las calorías")
+        
+        # Añadir al grid (fila, columna)
+        grid_layout.addWidget(self.header_nombre, 0, 0)
+        grid_layout.addWidget(self.entry_nombre, 1, 0)
+        grid_layout.addWidget(self.header_calorias, 2, 0)
+        grid_layout.addWidget(self.entry_calorias, 3, 0)
+
+        # --- Widgets de la Columna Derecha ---
+        self.header_porcion = HeaderFrame()
+        layout_porcion = QVBoxLayout(self.header_porcion)
+        layout_porcion.addWidget(HeaderLabel("Porción / 100gr"))
+        
+        self.combo_box = CustomComboBox()
+        self.combo_box.addItems(["", "Por porción", "100gr"])
+        self.combo_box.currentTextChanged.connect(self.actualizar_interfaz)
+        
+        self.boton_agregar = CustomButton("Añadir Alimento", width=240, height=50, bg_color="#2ECC71", text_color="black")
+        self.boton_agregar.clicked.connect(self.on_agregar_callback)
+        
+        # Añadir al grid (fila, columna)
+        grid_layout.addWidget(self.header_porcion, 0, 1)
+        grid_layout.addWidget(self.combo_box, 1, 1)
+        grid_layout.addWidget(self.boton_agregar, 3, 1) # Alinear con el entry de calorías
+
+        # Inicialmente, ocultar los widgets dinámicos
+        self.header_calorias.hide()
+        self.entry_calorias.hide()
+        self.boton_agregar.hide()
+
+        self.layout.addLayout(grid_layout)
+        self.layout.addStretch(1) # Empuja todo hacia arriba
         self._crear_boton_api()
+        self.layout.addStretch(2) # Más espacio abajo
         
-        self.layout.addStretch()
-    
     def _crear_header(self):
-        """Crea el header con botón de ayuda"""
         header_layout = QHBoxLayout()
         header_layout.addStretch()
-        
         self.boton_ayuda = InfoButton("i")
         self.boton_ayuda.clicked.connect(self.on_ayuda_callback)
         header_layout.addWidget(self.boton_ayuda)
-        
         self.layout.addLayout(header_layout)
-    
-    def _crear_contenido_principal(self):
-        """Crea el contenido principal con las dos columnas"""
-        content_layout = QHBoxLayout()
-        content_layout.setSpacing(60)  # Más espacio entre columnas
+
+    def actualizar_interfaz(self, seleccion):
+        """Muestra u oculta los widgets según la selección del ComboBox."""
+        show_widgets = seleccion in ["Por porción", "100gr"]
         
-        # Columna izquierda - Agregar alimento
-        left_column = self._crear_columna_izquierda()
-        content_layout.addWidget(left_column)
+        self.header_calorias.setVisible(show_widgets)
+        self.entry_calorias.setVisible(show_widgets)
+        self.boton_agregar.setVisible(show_widgets)
         
-        # Columna derecha - Tipo de porción
-        right_column = self._crear_columna_derecha()
-        content_layout.addWidget(right_column)
-        
-        content_layout.addStretch()
-        self.layout.addLayout(content_layout)
-    
-    def _crear_columna_izquierda(self):
-        """Crea la columna izquierda para agregar alimento"""
-        frame = QFrame()
-        frame.setFixedWidth(300)  # Un poco más ancho
-        layout = QVBoxLayout(frame)
-        layout.setSpacing(20)  # Más espacio entre elementos
-        
-        # Header
-        header_frame = HeaderFrame(width=245, height=35, bg_color="#34495E")
-        header_label = HeaderLabel("Agregar Alimentos")
-        header_label.setParent(header_frame)
-        header_label.move(10, 8)
-        
-        # Entry nombre
-        self.entry_nombre = CustomEntry(
-            placeholder="Ingrese el nombre del alimento",
-            width=245, height=35
-        )
-        
-        layout.addWidget(header_frame)
-        layout.addWidget(self.entry_nombre)
-        layout.addStretch()
-        
-        return frame
-    
-    def _crear_columna_derecha(self):
-        """Crea la columna derecha para tipo de porción"""
-        frame = QFrame()
-        frame.setFixedWidth(300)  # Un poco más ancho
-        layout = QVBoxLayout(frame)
-        layout.setSpacing(20)  # Más espacio entre elementos
-        
-        # Header
-        header_frame = HeaderFrame(width=245, height=35, bg_color="#34495E")
-        header_label = HeaderLabel("Porcion / 100gr")
-        header_label.setParent(header_frame)
-        header_label.move(10, 8)
-        
-        # ComboBox
-        self.combo_box = CustomComboBox(width=245, height=35)
-        self.combo_box.addItems(["Por porción", "100gr"])
-        self.combo_box.currentTextChanged.connect(self.actualizar_interfaz)
-        
-        layout.addWidget(header_frame)
-        layout.addWidget(self.combo_box)
-        layout.addStretch()
-        
-        return frame
-    
+        if seleccion == "Por porción":
+            self.label_cant_calorias.setText("Calorías por porción")
+        elif seleccion == "100gr":
+            self.label_cant_calorias.setText("Calorías por 100gr")
+
     def _crear_boton_api(self):
-        """Crea el botón para buscar calorías con más separación"""
         api_layout = QHBoxLayout()
         api_layout.addStretch()
-        
-        self.api = CustomButton(
-            "Buscar Calorías", 
-            width=200, height=40,
-            bg_color="#2ECC71", 
-            hover_color="#27AE60",
-            text_color="black"
-        )
+        self.api = CustomButton("Buscar Calorías", width=200, height=40, bg_color="#2ECC71", hover_color="#27AE60", text_color="black")
         self.api.clicked.connect(self._abrir_api_calorias)
-        
         api_layout.addWidget(self.api)
-        api_layout.addStretch()  # Centrar el botón
+        api_layout.addStretch()
         self.layout.addLayout(api_layout)
-    
-    def actualizar_interfaz(self, seleccion):
-        """Actualiza la interfaz cuando se selecciona un tipo de porción"""
-        # Crear elementos de calorías si no existen
-        if not hasattr(self, 'entry_calorias'):
-            self._crear_elementos_calorias()
-        
-        # Actualizar texto del label según selección
-        if seleccion == "100gr":
-            self.label_cant_calorias.setText("Calorías por 100gr")
-        elif seleccion == "Por porción":
-            self.label_cant_calorias.setText("Calorías por porción")
-        else:
-            self.label_cant_calorias.setText("Calorías")
-    
-    def _crear_elementos_calorias(self):
-        """Crea los elementos de entrada de calorías con mejor espaciado"""
-        # Buscar el layout de contenido principal
-        content_layout = self.layout.itemAt(1).layout()
-        left_frame = content_layout.itemAt(0).widget()
-        left_layout = left_frame.layout()
-        
-        # Agregar espacio antes de los elementos de calorías
-        left_layout.insertSpacing(left_layout.count() - 1, 30)
-        
-        # Header para calorías
-        calorias_header_frame = HeaderFrame(width=245, height=35, bg_color="#34495E")
-        self.label_cant_calorias = HeaderLabel("Calorías")
-        self.label_cant_calorias.setParent(calorias_header_frame)
-        self.label_cant_calorias.move(10, 8)
-        
-        # Insertar header antes del stretch
-        left_layout.insertWidget(left_layout.count() - 1, calorias_header_frame)
-        
-        # Agregar espacio entre header y entry
-        left_layout.insertSpacing(left_layout.count() - 1, 15)
-        
-        # Entry calorías
-        self.entry_calorias = CustomEntry(
-            placeholder="Ingrese las calorías",
-            width=245, height=35
-        )
-        
-        # Insertar entry antes del stretch
-        left_layout.insertWidget(left_layout.count() - 1, self.entry_calorias)
-        
-        # Botón agregar en la columna derecha con más espacio
-        content_layout = self.layout.itemAt(1).layout()
-        right_frame = content_layout.itemAt(1).widget()
-        right_layout = right_frame.layout()
-        
-        # Agregar espacio antes del botón
-        right_layout.insertSpacing(right_layout.count() - 1, 60)
-        
-        self.boton_agregar = CustomButton(
-            "Añadir Alimento",
-            width=240, height=50,
-            bg_color="#2ECC71",
-            hover_color="#27AE60",
-            text_color="black"
-        )
-        self.boton_agregar.clicked.connect(self.on_agregar_callback)
-        
-        right_layout.insertWidget(right_layout.count() - 1, self.boton_agregar)
-    
+
     def _abrir_api_calorias(self):
-        """Abre la página web para buscar calorías"""
         webbrowser.open("https://fitia.app/es/calorias-informacion-nutricional/")
     
     def obtener_datos_formulario(self):
-        """Obtiene los datos del formulario"""
         return {
             'nombre': self.entry_nombre.text().strip(),
-            'calorias': getattr(self.entry_calorias, 'text', lambda: '')().strip(),
+            'calorias': self.entry_calorias.text().strip(),
             'tipo_porcion': self.combo_box.currentText()
         }
     
     def limpiar_formulario(self):
-        """Limpia los campos del formulario"""
         self.entry_nombre.clear()
-        if hasattr(self, 'entry_calorias'):
-            self.entry_calorias.clear()
-
+        self.combo_box.setCurrentIndex(0) # Esto disparará 'actualizar_interfaz' y ocultará los campos
+        self.entry_calorias.clear()
 
 class Agregar_Alimento(QWidget):
     """
