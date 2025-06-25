@@ -1,14 +1,12 @@
-# controller/historial/historial.py - VERSIÓN CORREGIDA Y SIMPLIFICADA
-
 import sqlite3
-from datetime import datetime
+import datetime
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, 
                              QFrame, QLabel, QPushButton, QTableView, QHeaderView,
-                             QDateEdit, QLineEdit)
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QAbstractTableModel, QDate
+                             QDateEdit)
+from PyQt6.QtCore import Qt, pyqtSignal, QAbstractTableModel, QDate
+from .historialfacade import HistorialFacade
 
-# --- Clase para el Modelo de la Tabla (Maneja los datos) ---
 class HistorialTableModel(QAbstractTableModel):
     def __init__(self, data):
         super().__init__()
@@ -32,7 +30,6 @@ class HistorialTableModel(QAbstractTableModel):
             return self.headers[section]
         return None
 
-# --- Clase para la Vista (Maneja los botones y la tabla) ---
 class HistorialView(QWidget):
     # Señales que la vista emite hacia el controlador
     aplicar_filtros_clicked = pyqtSignal()
@@ -124,13 +121,18 @@ class HistorialView(QWidget):
         self.tabla.setModel(model)
 
 
+# ... (las clases HistorialTableModel y HistorialView se mantienen igual) ...
+
 # --- Clase Principal (Controlador del Historial) ---
 class Historial(QWidget):
-    def __init__(self, panel_principal, color, usuario=None):
+    def __init__(self, panel_principal, color, usuario="test_user"):
         super().__init__()
         self.usuario = usuario
+        # Se inicializa el Facade que habla con la API
+        self.facade = HistorialFacade(self.usuario)
         self.init_ui()
-        self.refrescar_vista() # Cargar todos los datos al iniciar
+        # Se carga la vista con datos iniciales de la API
+        self.refrescar_vista()
 
     def init_ui(self):
         """Configura la interfaz principal del módulo Historial."""
@@ -146,58 +148,62 @@ class Historial(QWidget):
         main_layout.addWidget(titulo)
         main_layout.addWidget(self.historial_view)
         
-        # Conectar las señales de la vista a los métodos de este controlador
-        self.historial_view.aplicar_filtros_clicked.connect(self.aplicar_filtros)
-        self.historial_view.limpiar_filtros_clicked.connect(self.refrescar_vista)
+        # Conectar las señales de la vista a los métodos del controlador
+        self.historial_view.btn_aplicar.clicked.connect(self.aplicar_filtros)
+        self.historial_view.btn_limpiar.clicked.connect(self.refrescar_vista)
 
-    def _ejecutar_consulta(self, query, params=None):
-        """Método central para ejecutar consultas a la BD."""
-        try:
-            conn = sqlite3.connect(f"./users/{self.usuario}/alimentos.db")
-            cursor = conn.cursor()
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-            datos = cursor.fetchall()
-            conn.close()
-            return datos
-        except Exception as e:
-            QMessageBox.critical(self, "Error de Base de Datos", f"No se pudo ejecutar la consulta: {e}")
-            return []
+    # --- MÉTODO ELIMINADO ---
+    # _ejecutar_consulta ya no es necesario, porque no hablamos con la BD local.
 
     def refrescar_vista(self):
-        """Slot público que recarga TODOS los datos del historial."""
-        print("Refrescando la vista de Historial con todos los datos...")
-        query = "SELECT nombre, fecha, hora, cantidad, total_cal FROM consumo_diario ORDER BY id DESC"
-        datos_totales = self._ejecutar_consulta(query)
-        self.historial_view.set_data_in_table(datos_totales)
-        # Resetear fechas a un rango por defecto amplio
+        """Recarga la vista con un rango de fechas por defecto (último año)."""
+        # Resetea las fechas en la UI a un rango por defecto amplio
         self.historial_view.date_from.setDate(QDate.currentDate().addYears(-1))
         self.historial_view.date_to.setDate(QDate.currentDate())
-
-
-    def aplicar_filtros(self):
-        """Aplica los filtros de fecha seleccionados por el usuario."""
-        fecha_desde = self.historial_view.date_from.date().toString("dd-MM-yyyy")
-        fecha_hasta = self.historial_view.date_to.date().toString("dd-MM-yyyy")
-        print(f"Filtrando desde {fecha_desde} hasta {fecha_hasta}...")
+        # Llama a aplicar_filtros para cargar los datos de ese rango por defecto
+        self.aplicar_filtros()
         
-        query = """
-            SELECT nombre, fecha, hora, cantidad, total_cal 
-            FROM consumo_diario 
-            WHERE fecha BETWEEN ? AND ? 
-            ORDER BY id DESC
-        """
-        # Nota: SQLite no entiende el formato DD-MM-YYYY para comparaciones.
-        # Esta consulta funcionará si filtras en la misma fecha. Para rangos,
-        # necesitarías guardar las fechas en formato YYYY-MM-DD.
-        # Por ahora, la dejamos así para mantener la funcionalidad básica.
-        datos_filtrados = self._ejecutar_consulta(query, (fecha_desde, fecha_hasta))
-        self.historial_view.set_data_in_table(datos_filtrados)
+    def aplicar_filtros(self):
+        """Obtiene los datos de la API según el rango de fechas y actualiza la tabla."""
+        fecha_desde = self.historial_view.date_from.date().toString("yyyy-MM-dd")
+        fecha_hasta = self.historial_view.date_to.date().toString("yyyy-MM-dd")
+        
+        print(f"Pidiendo historial a la API entre {fecha_desde} y {fecha_hasta}...")
+        
+        # Usamos el facade para obtener datos de la API
+        datos_api = self.facade.obtener_registros_por_rango(fecha_desde, fecha_hasta)
+        
+        if datos_api is None:
+            QMessageBox.critical(self, "Error de API", "No se pudo obtener respuesta del servidor.")
+            return
+
+        # Convertimos los datos para que la tabla los entienda
+        datos_para_tabla = self._formatear_datos_para_tabla(datos_api)
+        self.historial_view.set_data_in_table(datos_para_tabla)
+
+    def _formatear_datos_para_tabla(self, datos_api: list) -> list:
+        """Convierte la lista de diccionarios de la API a una lista de tuplas para la tabla."""
+        datos_formateados = []
+        for consumo in datos_api:
+            try:
+                # La fecha de la API viene en yyyy-MM-dd, la formateamos a dd-MM-yyyy
+                fecha_mostrada = datetime.datetime.strptime(consumo['fecha'], '%Y-%m-%d').strftime('%d-%m-%Y')
+            except (ValueError, TypeError):
+                fecha_mostrada = consumo.get('fecha', 'N/A')
+
+            datos_formateados.append(
+                (
+                    consumo.get('nombre', 'N/A'),
+                    fecha_mostrada,
+                    consumo.get('hora', 'N/A'),
+                    consumo.get('cantidad', 0),
+                    round(consumo.get('total_cal', 0), 1)
+                )
+            )
+        return datos_formateados
         
     def show_welcome_message(self):
-        """Muestra un mensaje de bienvenida simple (mantiene compatibilidad)."""
+        """Muestra un mensaje de bienvenida simple."""
         QMessageBox.information(
             self,
             "Historial de Consumo",

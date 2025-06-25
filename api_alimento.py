@@ -170,7 +170,32 @@ def obtener_resumen_diario(fecha_str: str):
     total_calorias = sum(c["total_cal"] for c in consumos_del_dia)
     return {"fecha": fecha_str, "resumen_total": {"calorias": round(total_calorias, 2)}, "consumos": consumos_del_dia}
 
-
+@app.get("/historial")
+def obtener_historial_completo(fecha_desde: str, fecha_hasta: str):
+    """
+    Devuelve todos los registros de consumo entre dos fechas (formato YYYY-MM-DD).
+    """
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # La consulta busca en la tabla de consumo y filtra por el rango de fechas.
+    query = """
+        SELECT nombre, fecha, hora, cantidad, total_cal 
+        FROM consumo_diario 
+        WHERE fecha BETWEEN ? AND ?
+        ORDER BY fecha DESC, hora DESC
+    """
+    
+    cursor.execute(query, (fecha_desde, fecha_hasta))
+    registros = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    if not registros:
+        # Es mejor devolver una lista vacía que un error 404 en este caso.
+        return []
+        
+    return registros
 @app.get("/")
 def root():
     return {"mensaje": "API Persistente de Alimentos está en línea y funcionando."}
