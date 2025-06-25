@@ -1,7 +1,9 @@
+# view/grafico_view.py
+
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QPushButton, QComboBox, QGroupBox)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QColor # <-- IMPORTANTE: Añadir QColor
 
 # Importamos los nuevos componentes
 from view.widgets.bar_chart_widget import BarChartWidget
@@ -13,10 +15,8 @@ class GraficoView(QWidget):
     """
     def __init__(self, data_provider: ChartDataManager):
         super().__init__()
-        # Inyección de dependencias: La vista recibe el proveedor de datos
         self.data_provider = data_provider
         
-        # Mapeo para el Principio Open/Closed
         self.data_fetchers = {
             "Consumo de Calorías": self.data_provider.get_calories_data,
             "Consumo de Agua": self.data_provider.get_water_data,
@@ -24,8 +24,8 @@ class GraficoView(QWidget):
         }
         
         self.init_ui()
-        self.update_chart() # Carga inicial
-        
+        self.update_chart()
+
     def init_ui(self):
         self.setStyleSheet("""
             QWidget { background-color: #3c3c3c; color: white; }
@@ -42,9 +42,10 @@ class GraficoView(QWidget):
         title = QLabel("Gráficos y Estadísticas")
         title.setFont(QFont("Arial", 24, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Hacemos el título un poco menos dominante
+        title.setFixedHeight(50)
         layout.addWidget(title)
         
-        # Controles
         controls_layout = QHBoxLayout()
         self.period_combo = QComboBox()
         self.period_combo.addItems(["Última semana", "Último mes", "Últimos 3 meses", "Último año"])
@@ -62,16 +63,16 @@ class GraficoView(QWidget):
         controls_layout.addStretch()
         layout.addLayout(controls_layout)
         
-        # Conexiones de los botones
         self.update_btn.clicked.connect(self.update_chart)
         self.data_combo.currentTextChanged.connect(self.update_chart)
         self.period_combo.currentTextChanged.connect(self.update_chart)
         
-        # Gráfico principal
-        self.chart_group = QGroupBox("Estadísticas") # El título cambiará dinámicamente
+        self.chart_group = QGroupBox("Estadísticas")
         chart_layout = QVBoxLayout(self.chart_group)
         self.main_chart = BarChartWidget()
         chart_layout.addWidget(self.main_chart)
+        
+        # El layout principal ahora tiene el gráfico
         layout.addWidget(self.chart_group)
 
     def update_chart(self):
@@ -79,10 +80,20 @@ class GraficoView(QWidget):
         periodo = self.period_combo.currentText()
         tipo_dato = self.data_combo.currentText()
         
-        self.chart_group.setTitle(tipo_dato) # Actualizar título del gráfico
+        self.chart_group.setTitle(tipo_dato)
         
         fetch_function = self.data_fetchers.get(tipo_dato)
         
         if fetch_function:
             labels, data = fetch_function(period=periodo)
+            
+            # --- SOLUCIÓN A LOS COLORES: Paleta temática ---
+            color = QColor("#FF9800") # Naranja para Calorías por defecto
+            if tipo_dato == "Consumo de Agua":
+                color = QColor("#03A9F4") # Azul para Agua
+            elif tipo_dato == "Registro de Peso":
+                color = QColor("#9C27B0") # Púrpura para Peso
+            # -----------------------------------------------
+
+            self.main_chart.set_bar_color(color)
             self.main_chart.set_data(data, labels)
