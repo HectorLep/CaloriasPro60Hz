@@ -467,7 +467,21 @@ class RegistroAlimentoPyQt6(QWidget):
                 self, "Usar Hora Actual", 400, 410, 150, 35, 
                 self.tiempo_manager.set_current_time
             )
-            self.boton_hora_actual.setStyleSheet(""" ... """)
+            self.boton_hora_actual.setStyleSheet("""QPushButton {
+                background-color: #4CAF50;  /* Verde positivo */
+                color: white;
+                border: none;
+                padding: 8px;
+                border-radius: 10px;
+                font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #FB8C00;
+                    }
+                    QPushButton:pressed {
+                        background-color: #EF6C00;
+                        }
+                        """)
         else:
             self.boton_hora_actual.show()
     
@@ -477,7 +491,22 @@ class RegistroAlimentoPyQt6(QWidget):
                 self, "Registrar Alimento", 80, 460, 240, 50, 
                 self.boton_mensajes_insert
             )
-            self.boton_registrar.setStyleSheet(""" ... """)
+            self.boton_registrar.setStyleSheet("""QPushButton {
+                background-color: #4CAF50;  /* Verde positivo */
+                color: white;
+                border: none;
+                padding: 10px;
+                font-size: 16px;
+                border-radius: 10px;
+                font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #45A049;
+                    }
+                    QPushButton:pressed {
+                        background-color: #388E3C;
+                        }
+                        """)
         else:
             self.boton_registrar.show()
     
