@@ -77,15 +77,13 @@ class LoginScreen(QWidget):
         """Crea (si no existe) y muestra el formulario de inicio de sesión."""
         if not self.iniciar_sesion_form:
             # El "on_success" de este formulario es el éxito final del login
-            self.iniciar_sesion_form = IniciarSesionForm(self, self.auth_service, self.on_login_success, None)
+            # << MODIFICACIÓN: Pasamos self.mostrar_menu_login como callback para el botón "Volver" >>
+            self.iniciar_sesion_form = IniciarSesionForm(self, self.auth_service, self.on_login_success, self.mostrar_menu_login)
             
-            # Conectar la señal de "volver" para regresar al menú principal
-            self.iniciar_sesion_form.volver_clicked.connect(self.mostrar_menu_login)
+            # La conexión de la señal 'volver_clicked' se maneja ahora dentro del constructor del form
             self.form_stack.addWidget(self.iniciar_sesion_form)
 
-        # Actualizar la lista de usuarios por si se registró uno nuevo
-        self.iniciar_sesion_form.widgets['users_combobox'].clear()
-        self.iniciar_sesion_form.widgets['users_combobox'].addItems(self.auth_service.obtener_usuarios())
+        # La línea que causaba el error ha sido eliminada, ya no es necesaria.
         
         # Cambiar la vista al formulario de inicio de sesión
         self.form_stack.setCurrentWidget(self.iniciar_sesion_form)

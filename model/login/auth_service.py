@@ -1,6 +1,7 @@
-import sqlite3
-from abc import ABC, abstractmethod
+# auth_service.py (Versión corregida y completa)
 
+from abc import ABC, abstractmethod
+import requests
 
 class IAuthService(ABC):
     @abstractmethod
@@ -23,115 +24,88 @@ class IAuthService(ABC):
     def limpiar_usuario_actual(self):
         pass
 
-    # --- AÑADE ESTE MÉTODO AQUÍ ---
     @abstractmethod
     def obtener_usuario_actual(self):
         pass
 
 class AuthService(IAuthService):
-    def __init__(self, db_file='usuarios.db'):
-        self.db_file = db_file
-        self._inicializar_db()
-        
-    def _inicializar_db(self):
-        """Inicializa la base de datos si no existe."""
-        try:
-            conn = sqlite3.connect(self.db_file)
-            cursor = conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    nombre TEXT PRIMARY KEY,
-                    contra TEXT NOT NULL
-                )
-            """)
-            conn.commit()
-        except sqlite3.Error as e:
-            print(f"Error al inicializar la base de datos: {e}")
-        finally:
-            if conn:
-                conn.close()
+    def __init__(self, api_base_url="http://127.0.0.1:8000"):
+        self.api_base_url = api_base_url
+        self.current_user = None
+        self.access_token = None
     
-    def verificar_credenciales(self, usuario, contrasena):
-        """Verifica las credenciales del usuario."""
+    def verificar_credenciales(self, nombre_usuario, contraseña):
+        """
+        Inicia sesión usando la API y verifica las credenciales.
+        Este método ya estaba funcionando correctamente.
+        """
         try:
-            conn = sqlite3.connect(self.db_file)
-            cursor = conn.cursor()
-            cursor.execute("SELECT contra FROM users WHERE nombre = ?", (usuario,))
-            resultado = cursor.fetchone()
+            login_data = {'username': nombre_usuario, 'password': contraseña}
+            response = requests.post(
+                f"{self.api_base_url}/login/",
+                data=login_data # OAuth2PasswordRequestForm espera 'data' (form-data)
+            )
             
-            return resultado is not None and contrasena == resultado[0]
-        except sqlite3.Error as e:
-            print(f"Error al verificar credenciales: {e}")
+            if response.status_code == 200:
+                token_data = response.json()
+                self.access_token = token_data.get('access_token')
+                self.guardar_usuario_actual(nombre_usuario) # Guardamos el usuario en la sesión
+                return True
+            else:
+                print(f"Error de credenciales: {response.json().get('detail')}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Error de conexión al iniciar sesión: {e}")
             return False
-        finally:
-            if conn:
-                conn.close()
-    
-    def registrar_usuario(self, datos_usuario):
-        """Registra un nuevo usuario en la base de datos."""
-        try:
-            conn = sqlite3.connect(self.db_file)
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO users (nombre, contra) VALUES (?, ?)", 
-                          (datos_usuario['nombre'], datos_usuario['contra']))
-            conn.commit()
-            return True
-        except sqlite3.IntegrityError:
-            return False
-        except sqlite3.Error as e:
-            print(f"Error al registrar usuario: {e}")
-            return False
-        finally:
-            if conn:
-                conn.close()
-    
+
     def obtener_usuarios(self):
-        """Obtiene la lista de usuarios registrados."""
+        """
+        Obtiene la lista de nombres de usuario desde el endpoint /users/ de la API.
+        """
         try:
-            conn = sqlite3.connect(self.db_file)
-            cursor = conn.cursor()
-            cursor.execute("SELECT nombre FROM users")
-            usuarios = cursor.fetchall()
-            return [usuario[0] for usuario in usuarios]
-        except sqlite3.Error as e:
-            print(f"Error al obtener los usuarios: {e}")
-            return []
-        finally:
-            if conn:
-                conn.close()
-    
+            response = requests.get(f"{self.api_base_url}/users/")
+            response.raise_for_status()  # Lanza una excepción si hay un error HTTP
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error al conectar con la API para obtener usuarios: {e}")
+            return [] # Devuelve lista vacía en caso de error
+
+    def registrar_usuario(self, datos_usuario):
+        """
+        Registra un usuario en la API.
+        Este método ya estaba funcionando correctamente.
+        """
+        try:
+            registro_data = {
+                "nombre_usuario": datos_usuario['nombre'],
+                "password": datos_usuario['contra'],
+                "sexo": datos_usuario['sexo'],
+                "peso": float(datos_usuario['peso']),
+                "altura": int(datos_usuario['altura']),
+                "meta_calorias": int(datos_usuario['meta_calorias']),
+                "nivel_actividad": datos_usuario['nivel_actividad'],
+                "fecha_nacimiento": datos_usuario['fecha_nacimiento'].isoformat(),
+                "edad": int(datos_usuario['edad'])
+            }
+            response = requests.post(f"{self.api_base_url}/register/", json=registro_data)
+            
+            if response.status_code == 201:
+                return True
+            else:
+                print(f"Error al registrar: {response.json().get('detail')}")
+                return False
+        except requests.exceptions.RequestException as e:
+            print(f"Error de conexión al registrar: {e}")
+            return False
+
     def guardar_usuario_actual(self, usuario):
-        """Guarda el usuario actual en un archivo."""
-        try:
-            with open('usuario_actual.txt', 'w') as file:
-                file.write(usuario)
-            return True
-        except Exception as e:
-            print(f"Error al guardar usuario actual: {e}")
-            return False
-    
+        self.current_user = usuario
+        return True
+
     def limpiar_usuario_actual(self):
-        """Limpia el archivo de usuario actual."""
-        try:
-            with open('usuario_actual.txt', 'w') as file:
-                file.write('')
-            return True
-        except Exception as e:
-            print(f"Error al limpiar usuario actual: {e}")
-            return False
-        
-    # --- AÑADE ESTE MÉTODO COMPLETO AL FINAL DE LA CLASE ---
+        self.current_user = None
+        self.access_token = None
+
     def obtener_usuario_actual(self):
-        """
-        Lee el nombre del usuario actual desde el archivo 'usuario_actual.txt'.
-        """
-        try:
-            with open('usuario_actual.txt', 'r') as file:
-                # .strip() elimina espacios en blanco o saltos de línea
-                return file.read().strip()
-        except FileNotFoundError:
-            # Si el archivo no existe, no hay usuario logueado
-            return None
-        except Exception as e:
-            print(f"Error al obtener usuario actual: {e}")
-            return None
+        return self.current_user

@@ -103,6 +103,8 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+
+
 # --- 4. Lógica de Autenticación y JWT ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -156,7 +158,17 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     expire_delta = timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRES_MINUTES)
     access_token = create_access_token(data={"sub": user.nombre_usuario}, expires_delta=expire_delta)
     
+    
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/", response_model=list[str], tags=["Users"])
+def get_all_users(db: Session = Depends(get_db)):
+    """
+    Obtiene una lista de todos los nombres de usuario registrados.
+    """
+    usuarios = db.query(Usuario.nombre_usuario).all()
+    # La consulta devuelve una lista de tuplas [('user1',), ('user2',)], la aplanamos.
+    return [usuario[0] for usuario in usuarios]
 
 @app.get("/users/me/", response_model=UsuarioPublic, tags=["Users"])
 def read_users_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
