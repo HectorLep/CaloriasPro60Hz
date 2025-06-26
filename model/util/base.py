@@ -68,7 +68,7 @@ class DBManager:
     def conectar_principal():
         """Conecta a la base de datos principal."""
         try:
-            return sqlite3.connect("./usuarios.db")
+            return sqlite3.connect("./app.db")
         except sqlite3.Error:
             return None
 
