@@ -97,4 +97,3 @@ class LoginForm(IForm, QWidget):
     
     def _mostrar_registro(self):
         self.registrarse_clicked.emit()
-

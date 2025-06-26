@@ -260,9 +260,14 @@ class MainWindow(QMainWindow):
             color="#3c3c3c",
             usuario=self.current_user
         )
+        
+        # --- INICIO DEL CAMBIO IMPORTANTE ---
+        # 1. Creamos una única instancia del gestor de datos
         self.data_manager = ChartDataManager(username=self.current_user)
         self.graficos_view = GraficoView(data_provider=self.data_manager, usuario=self.current_user)
-        
+
+        # --- FIN DEL CAMBIO IMPORTANTE ---
+
         self.historial = Historial(
             panel_principal=self.stacked_widget,
             color="#3c3c3c", 
@@ -447,11 +452,13 @@ class MainWindow(QMainWindow):
                     "widget": self.agregar_alimento,
                     "welcome_method": "_mostrar_mensaje_bienvenida",
                     "db_column": "agregar_alimento"
-                },
+                },    
                 "grafico": {
                     "widget": self.graficos_view,
                     "welcome_method": "mostrar_mensaje_bienvenida",
                     "db_column": "graficos"}
+
+                
             }
 
             if section_name in section_details:
@@ -473,6 +480,7 @@ class MainWindow(QMainWindow):
                     self.update_message_status(db_column_name)
                     self.welcome_message_flags[db_column_name] = 1
 
+            # Lógica para cambiar de vista. El índice de 'grafico' (3) ahora corresponde a 'graficos_view'
             section_map = {
                 "welcome": 0, "registrar": 1, "agregar": 2, "grafico": 3,
                 "historial": 4, "settings": 5, "salud": 6, "menu": 7

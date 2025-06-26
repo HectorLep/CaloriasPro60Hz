@@ -1,4 +1,4 @@
-import requests
+import sqlite3
 from datetime import datetime, date
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit,
                              QComboBox, QFrame, QScrollArea, QDateEdit, QMessageBox)
@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QFont
 from model.login.user_validator import UserValidator
 from model.login.auth_service import IAuthService
+from model.login.user_database import UserDatabase
 from model.util.colores import *
 from .form import *
 
@@ -20,14 +21,15 @@ class RegistroForm(IForm, QWidget):
         self.on_success = on_success
         self.on_back = on_back
         self.widgets = {}
+        self.user_database = UserDatabase()
         self.validator = UserValidator()
-        # URL base de la API
-        self.api_base_url = "http://127.0.0.1:8000"
         self.init_ui()
         
     def calcular_edad(self, fecha_nacimiento):
         """Calcula la edad basada en la fecha de nacimiento."""
         try:
+            # --- CORRECCIÓN 1: Se cambió toPython() por toPyDate() ---
+            # Este es el método correcto en PyQt6 para convertir un QDate a un objeto date de Python.
             if isinstance(fecha_nacimiento, QDate):
                 fecha_nac = fecha_nacimiento.toPyDate()
             else:
@@ -45,12 +47,15 @@ class RegistroForm(IForm, QWidget):
             print(f"Error calculando edad: {e}")
             return 0
     
+    # --- IMPLEMENTACIÓN 1: Nueva función para actualizar la UI ---
+    # Esta función se llamará cada vez que la fecha cambie.
     def actualizar_edad(self):
         """Actualiza el label de edad cuando cambia la fecha de nacimiento."""
         try:
             fecha_seleccionada = self.widgets['fecha_nacimiento_entry'].date()
             edad = self.calcular_edad(fecha_seleccionada)
             self.widgets['edad_label'].setText(f"Edad: {edad} años")
+            # Guardamos la edad calculada como una propiedad para usarla después en _guardar()
             self.widgets['edad_label'].setProperty("edad_calculada", edad)
         except Exception as e:
             print(f"Error actualizando edad: {e}")
@@ -137,6 +142,8 @@ class RegistroForm(IForm, QWidget):
                 max_date = QDate.currentDate().addYears(-13)
                 widget_instance.setDateRange(min_date, max_date)
                 widget_instance.setDisplayFormat("dd/MM/yyyy")
+                # --- IMPLEMENTACIÓN 2: Conectar la señal al slot ---
+                # Cada vez que la fecha cambie, se llamará a self.actualizar_edad.
                 widget_instance.dateChanged.connect(self.actualizar_edad)
 
             scroll_layout.addWidget(widget_instance)
@@ -147,6 +154,7 @@ class RegistroForm(IForm, QWidget):
                 self.widgets['edad_label'].setAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.widgets['edad_label'].setProperty("edad_calculada", 0)
                 scroll_layout.addWidget(self.widgets['edad_label'])
+                # --- IMPLEMENTACIÓN 3: Calcular la edad inicial al cargar ---
                 self.actualizar_edad()
 
         scroll_area.setWidget(scroll_widget)
@@ -180,57 +188,17 @@ class RegistroForm(IForm, QWidget):
     def _volver_atras(self):
         self.volver_clicked.emit()
 
-    def _verificar_usuario_existente_api(self, nombre):
-        """Verifica si el usuario ya existe usando la API"""
+    def _verificar_usuario_existente(self, nombre):
+        """Verifica si el usuario ya existe usando el auth_service"""
         try:
-            response = requests.get(f"{self.api_base_url}/users/", timeout=5)
-            if response.status_code == 200:
-                usuarios_existentes = response.json()
-                return nombre in usuarios_existentes
-            else:
-                print(f"Error al obtener usuarios: {response.status_code}")
-                return True  # Asumir que existe para evitar duplicados
-        except requests.exceptions.RequestException as e:
-            print(f"Error de conexión con la API: {e}")
-            QMessageBox.warning(self, "Error de Conexión", 
-                              "No se pudo conectar con el servidor. Verifica que la API esté ejecutándose.")
-            return True  # Asumir que existe para evitar errores
-
-    def _registrar_usuario_api(self, datos_usuario):
-        """Registra el usuario usando la API"""
-        try:
-            # Preparar los datos en el formato que espera la API
-            payload = {
-                "nombre_usuario": datos_usuario['nombre'],
-                "password": datos_usuario['contra'],
-                "sexo": datos_usuario['sexo'],
-                "peso": float(datos_usuario['peso']),
-                "altura": int(datos_usuario['altura']),
-                "meta_calorias": int(datos_usuario['meta_calorias']),
-                "nivel_actividad": datos_usuario['nivel_actividad'],
-                "fecha_nacimiento": datos_usuario['fecha_nacimiento'].isoformat(),
-                "edad": int(datos_usuario['edad'])
-            }
-
-            response = requests.post(
-                f"{self.api_base_url}/register/",
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                timeout=10
-            )
-
-            if response.status_code == 201:
-                return True, "Usuario registrado exitosamente"
-            else:
-                error_detail = response.json().get("detail", "Error desconocido")
-                return False, f"Error del servidor: {error_detail}"
-
-        except requests.exceptions.RequestException as e:
-            return False, f"Error de conexión: {str(e)}"
+            usuarios_existentes = self.auth_service.obtener_usuarios()
+            return nombre in usuarios_existentes
         except Exception as e:
-            return False, f"Error inesperado: {str(e)}"
+            print(f"Error al verificar usuario existente: {e}")
+            return True
 
     def _guardar(self):
+        # ... (el resto del método _guardar no necesita cambios) ...
         # Validar nombre
         nombre = self.widgets['nombre_entry'].text()
         valid_nombre, msg_nombre = UserValidator.validar_nombre(nombre)
@@ -238,8 +206,8 @@ class RegistroForm(IForm, QWidget):
             QMessageBox.warning(self, "Advertencia", msg_nombre)
             return
         
-        # Verificar si el usuario ya existe usando la API
-        if self._verificar_usuario_existente_api(nombre):
+        # Verificar si el usuario ya existe usando auth_service
+        if self._verificar_usuario_existente(nombre):
             QMessageBox.warning(self, "Advertencia", "Este nombre de usuario no está disponible.")
             return
         
@@ -306,8 +274,12 @@ class RegistroForm(IForm, QWidget):
         nivel_actividad = self.widgets['lvl_actividad_combobox'].currentText()
         genero = self.widgets['gen_combobox'].currentText()
         
+        conn = None # Inicializar conn para el bloque finally
         try:
-            # Preparar datos para el registro
+            # Crear base de datos para el usuario
+            self.user_database.crear_db_usuario(nombre)
+            
+            # Preparar datos para el registro (incluyendo la edad calculada)
             datos_usuario = {
                 'nombre': nombre, 
                 'contra': contra,
@@ -316,30 +288,49 @@ class RegistroForm(IForm, QWidget):
                 'altura': estatura,
                 'meta_calorias': meta_cal,
                 'nivel_actividad': nivel_actividad,
-                'fecha_nacimiento': fecha_qdate.toPyDate(),
+                'fecha_nacimiento': fecha_qdate.toPyDate(), # Usar toPyDate() aquí también
                 'edad': edad
             }
             
-            # Registrar usuario usando la API
-            exito, mensaje = self._registrar_usuario_api(datos_usuario)
-            
-            if not exito:
-                QMessageBox.warning(self, "Error de Registro", mensaje)
+            # Registrar usuario en el sistema de autenticación
+            if not self.auth_service.registrar_usuario(datos_usuario):
+                QMessageBox.warning(self, "Advertencia", "No se pudo registrar el usuario en el servicio de autenticación.")
                 return
             
-            # Si el registro fue exitoso, guardar usuario actual para iniciar sesión automáticamente
-            # (esto depende de cómo funcione tu auth_service)
-            try:
-                self.auth_service.guardar_usuario_actual(nombre)
-            except Exception as e:
-                print(f"Error al guardar usuario actual: {e}")
-                # No es crítico, el usuario puede iniciar sesión manualmente
+            # Guardar datos adicionales en la base de datos del usuario
+            directorio = f'./users/{nombre}'
+            conn = sqlite3.connect(f"{directorio}/alimentos.db")
+            cursor = conn.cursor()
             
-            QMessageBox.information(self, "Éxito", 
-                                  f"Se ha registrado correctamente.\nEdad calculada: {edad} años\n"
-                                  f"Puedes iniciar sesión con tu usuario y contraseña.")
+            cursor.execute("""
+                INSERT INTO datos (nombre, estatura, nivel_actividad, genero, meta_cal, edad)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (nombre, estatura, nivel_actividad, genero, meta_cal, edad))
+            
+            # Guardar peso inicial
+            if peso:
+                cursor.execute("""
+                    INSERT INTO peso (fecha, peso)
+                    VALUES (?, ?)
+                """, (datetime.now().strftime('%d-%m-%Y'), peso))
+            
+            # Insertar configuración de mensajes por defecto
+            cursor.execute("""
+                INSERT INTO mensajes (registrar_alimento, agregar_alimento, graficos, configuracion, salud, admin_alimentos, historial)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (1, 1, 1, 1, 1, 1, 1))
+            
+            conn.commit()
+            
+            # Guardar usuario actual para iniciar sesión automáticamente
+            self.auth_service.guardar_usuario_actual(nombre)
+            
+            QMessageBox.information(self, "Éxito", f"Se ha registrado correctamente.\nEdad calculada: {edad} años")
             self.ocultar()
             self.on_success()
             
         except Exception as e:
-            QMessageBox.critical(self, "Error Crítico", f"Error inesperado al registrarse: {str(e)}")
+            QMessageBox.critical(self, "Error Crítico", f"Error al registrarse: {str(e)}")
+        finally:
+            if conn:
+                conn.close()
