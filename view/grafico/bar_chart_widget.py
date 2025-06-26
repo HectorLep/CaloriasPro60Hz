@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QSizePolicy
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QRect
 from PyQt6.QtGui import QPainter, QPen, QBrush, QFont, QColor, QLinearGradient
 
 class BarChartWidget(QWidget):
@@ -33,7 +33,7 @@ class BarChartWidget(QWidget):
         self.draw_bar_chart(painter)
 
     def draw_bar_chart(self, painter):
-        margin_top, margin_bottom, margin_right, margin_left = 50, 50, 50, 80
+        margin_top, margin_bottom, margin_right, margin_left = 50, 80, 50, 80
         chart_width = self.width() - margin_left - margin_right
         chart_height = self.height() - margin_top - margin_bottom
         max_value = max(self.data) if self.data else 1
@@ -65,7 +65,7 @@ class BarChartWidget(QWidget):
             x = margin_left + x_offset + i * bar_width
             y = self.height() - margin_bottom - bar_height
             
-            # ""Relleno" de la barra
+            # Relleno 
             gradient = QLinearGradient(x, y, x, y + bar_height)
             gradient.setColorAt(0, self.bar_color.lighter(130))
             gradient.setColorAt(1, self.bar_color)
@@ -73,16 +73,24 @@ class BarChartWidget(QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawRoundedRect(int(x + 5), int(y), int(bar_width - 10), int(bar_height), 5, 5)
             
-            # "Relieve"
+            # Relieve
             border_pen = QPen(self.bar_color.lighter(170), 1.5) 
             painter.setPen(border_pen)
             painter.setBrush(Qt.BrushStyle.NoBrush) 
             painter.drawRoundedRect(int(x + 5), int(y), int(bar_width - 10), int(bar_height), 5, 5)
+
+            # Etiquetas eje x rotadas
             painter.setPen(QColor("#cccccc"))
             if i < len(self.labels):
-                painter.drawText(int(x), self.height() - margin_bottom + 5, int(bar_width), 20,
-                               Qt.AlignmentFlag.AlignCenter, self.labels[i])
-    
+                painter.save()
+                anchor_point_x = int(x + (bar_width / 2))
+                anchor_point_y = int(self.height() - margin_bottom + 15)
+                painter.translate(anchor_point_x, anchor_point_y)
+                painter.rotate(-45)
+                text_rect = QRect(-60, -10, 60, 20)
+                painter.drawText(text_rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, self.labels[i])
+                painter.restore()
+        
         painter.setPen(QPen(QColor("#555555"), 1, Qt.PenStyle.DashLine))
         for i in range(num_labels_y + 1):
             if i > 0:
