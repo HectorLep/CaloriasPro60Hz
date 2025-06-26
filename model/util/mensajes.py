@@ -124,5 +124,29 @@ MENSAJES = {
             </p>
         </div>
         """
+    },
+    "grafico_view": {
+        "titulo": "📈 Visualización de Gráficos",
+        "mensaje_html": """
+        <div style='text-align: center; padding: 15px;'>
+            <h2 style='color: #9B59B6; margin-bottom: 15px;'>
+                Tu Progreso en Imágenes
+            </h2>
+            <p style='font-size: 16px; line-height: 1.5; color: #cccccc;'>
+                Analiza tus datos de una forma visual e intuitiva para entender mejor tus hábitos.
+            </p>
+            <div style='background: #2c3e50; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #34495e;'>
+                <h3 style='color: #9B59B6; margin-bottom: 10px;'>¿Qué puedes hacer aquí?:</h3>
+                <ul style='text-align: left; color: #bbbbbb; line-height: 1.7;'>
+                    <li><b>Selecciona un período:</b> Mira tus datos por semana, mes o año.</li>
+                    <li><b>Elige el tipo de dato:</b> Cambia entre Calorías, Agua y Peso.</li>
+                    <li><b>Observa tus tendencias:</b> Detecta patrones en tu consumo y registro.</li>
+                </ul>
+            </div>
+            <p style='font-size: 14px; color: #aaaaaa; font-style: italic;'>
+                💡 Los gráficos se actualizan al cambiar cualquier opción. ¡No necesitas un botón!
+            </p>
+        </div>
+        """
     }
 }
