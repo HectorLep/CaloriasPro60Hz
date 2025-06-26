@@ -103,7 +103,9 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-
+class DeleteResponse(BaseModel):
+    message: str
+    deleted_user: str
 
 # --- 4. Lógica de Autenticación y JWT ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -113,6 +115,28 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """
+    Función auxiliar para obtener el usuario actual basado en el token JWT.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="No se pudieron validar las credenciales",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    user = db.query(Usuario).filter(Usuario.nombre_usuario == username).first()
+    if user is None:
+        raise credentials_exception
+    return user
 
 # --- 5. Creación de la Aplicación y Endpoints ---
 app = FastAPI(title="API de Registro y Nutrición", version="1.0.0")
@@ -171,24 +195,28 @@ def get_all_users(db: Session = Depends(get_db)):
     return [usuario[0] for usuario in usuarios]
 
 @app.get("/users/me/", response_model=UsuarioPublic, tags=["Users"])
-def read_users_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="No se pudieron validar las credenciales",
-        headers={"WWW-Authenticate": "Bearer"},
+def read_users_me(current_user: Usuario = Depends(get_current_user)):
+    """
+    Obtiene la información del usuario autenticado.
+    """
+    return current_user
+
+@app.delete("/users/me/", response_model=DeleteResponse, tags=["Users"])
+def delete_my_account(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Elimina la cuenta del usuario autenticado.
+    Esta acción es irreversible.
+    """
+    username = current_user.nombre_usuario
+    
+    # Eliminar el usuario de la base de datos
+    db.delete(current_user)
+    db.commit()
+    
+    return DeleteResponse(
+        message="Cuenta eliminada exitosamente",
+        deleted_user=username
     )
-    try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-        
-    user = db.query(Usuario).filter(Usuario.nombre_usuario == username).first()
-    if user is None:
-        raise credentials_exception
-    return user
 
 # << MODIFICADO >>: Se cambia 'main:app' por 'api:app' para reflejar el nuevo nombre del archivo.
 if __name__ == "__main__":

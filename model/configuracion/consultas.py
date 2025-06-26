@@ -2,6 +2,11 @@ from model.util.base import DBManager
 from .mensajes import MessageHandler  # Importamos nuestro manejador de mensajes
 import os
 import shutil
+import requests
+import json
+
+# Configuración de la API
+API_BASE_URL = "http://127.0.0.1:8000"  # Ajusta según tu configuración
 
 def obtener_datos_usuario(nombre_usuario):
     """Obtiene edad, género, meta calórica, nivel de actividad, estatura y peso actual del usuario."""
@@ -109,8 +114,101 @@ def guardar_configuracion_recordatorio(nombre_usuario, estado, frecuencia):
         MessageHandler.mostrar_advertencia("Error", f"Error al guardar configuración: {e}")
         return False
 
+def login_usuario_api(nombre_usuario, contraseña):
+    """Autentica al usuario en la API y devuelve el token de acceso."""
+    try:
+        login_data = {
+            "username": nombre_usuario,
+            "password": contraseña
+        }
+        
+        response = requests.post(
+            f"{API_BASE_URL}/login/",
+            data=login_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            return token_data["access_token"]
+        else:
+            return None
+            
+    except Exception as e:
+        MessageHandler.mostrar_advertencia("Error", f"Error al conectar con la API: {e}")
+        return None
+
+def eliminar_usuario_api(token):
+    """Elimina la cuenta del usuario usando la API con el token JWT."""
+    try:
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.delete(
+            f"{API_BASE_URL}/users/me/",
+            headers=headers
+        )
+        
+        if response.status_code == 200:
+            return True, response.json()
+        else:
+            error_detail = response.json().get("detail", "Error desconocido") if response.content else "Error de conexión"
+            return False, error_detail
+            
+    except Exception as e:
+        return False, f"Error al conectar con la API: {e}"
+
 def eliminar_usuario(nombre_usuario, contraseña):
-    """Elimina la cuenta del usuario si la contraseña es correcta."""
+    """
+    Elimina la cuenta del usuario usando la nueva API.
+    Mantiene compatibilidad con el código existente.
+    """
+    try:
+        # 1. Autenticar usuario y obtener token
+        token = login_usuario_api(nombre_usuario, contraseña)
+        if not token:
+            MessageHandler.mostrar_advertencia("Error", "Credenciales incorrectas")
+            return False
+        
+        # 2. Eliminar usuario usando la API
+        success, result = eliminar_usuario_api(token)
+        
+        if success:
+            # 3. Limpiar archivos locales si existen (compatibilidad con sistema anterior)
+            usuario_path = f'./users/{nombre_usuario}'
+            if os.path.exists(usuario_path):
+                try:
+                    shutil.rmtree(usuario_path)
+                except Exception as e:
+                    # No es crítico si no se pueden eliminar los archivos locales
+                    print(f"Advertencia: No se pudieron eliminar archivos locales: {e}")
+            
+            MessageHandler.mostrar_info("Éxito", f"Cuenta eliminada exitosamente: {result.get('deleted_user', nombre_usuario)}")
+            return True
+        else:
+            MessageHandler.mostrar_advertencia("Error", f"Error al eliminar cuenta: {result}")
+            return False
+            
+    except Exception as e:
+        MessageHandler.mostrar_advertencia("Error", f"Error al eliminar cuenta: {e}")
+        return False
+
+# Función auxiliar para verificar si la API está disponible
+def verificar_api_disponible():
+    """Verifica si la API está funcionando."""
+    try:
+        response = requests.get(f"{API_BASE_URL}/users/", timeout=5)
+        return response.status_code == 200
+    except:
+        return False
+
+def eliminar_usuario_legacy(nombre_usuario, contraseña):
+    """
+    Versión legacy de eliminar usuario (por si la API no está disponible).
+    Mantiene la funcionalidad original como respaldo.
+    """
     try:
         conexion = DBManager.conectar_principal()
         query_verificar = "SELECT contra FROM users WHERE nombre = ?"
