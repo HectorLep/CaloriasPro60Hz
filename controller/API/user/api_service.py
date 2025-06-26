@@ -1,3 +1,5 @@
+# api.py
+
 import os
 from datetime import datetime, date, timedelta
 from typing import Optional
@@ -5,27 +7,22 @@ import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# --- 1. Configuración (Inspirado en tu ApiConfig) ---
-
+# --- 1. Configuración ---
 class Settings:
-    # URL de la base de datos (usamos SQLite por simplicidad)
     SQLALCHEMY_DATABASE_URI: str = os.environ.get('DATABASE_URL') or 'sqlite:///./app.db'
-    
-    # Configuración de JWT
     JWT_SECRET_KEY: str = os.environ.get('Key_JWT') or 'dev-secret-key-change-in-production'
     JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRES_MINUTES: int = 60 # Equivalente a 1 hora
+    JWT_ACCESS_TOKEN_EXPIRES_MINUTES: int = 60
 
 settings = Settings()
 
-# --- 2. Modelos de Base de Datos SQLAlchemy (Tu Models.py adaptado) ---
-
+# --- 2. Modelos de Base de Datos SQLAlchemy ---
 Base = declarative_base()
 
 class Usuario(Base):
@@ -41,6 +38,8 @@ class Usuario(Base):
     nivel_actividad = Column(String(15), nullable=False)
     fecha_nacimiento = Column(Date, nullable=False)
     registro = Column(DateTime, default=datetime.utcnow)
+    
+    edad = Column(Integer, nullable=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -49,17 +48,10 @@ class Usuario(Base):
         return check_password_hash(self.password_hash, password)
 
 # --- Configuración de la Base de Datos ---
-
-engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
-    connect_args={"check_same_thread": False} # Necesario para SQLite
-)
+engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Crear tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
-# Dependencia para obtener la sesión de la BD
 def get_db():
     db = SessionLocal()
     try:
@@ -67,7 +59,7 @@ def get_db():
     finally:
         db.close()
 
-# --- 3. Esquemas Pydantic (Tu validacion.py adaptado) ---
+# --- 3. Esquemas Pydantic ---
 
 class UsuarioBase(BaseModel):
     nombre_usuario: str = Field(..., min_length=3, max_length=80)
@@ -77,25 +69,20 @@ class UsuarioBase(BaseModel):
     meta_calorias: int = Field(..., gt=1000, le=5000)
     nivel_actividad: str
     fecha_nacimiento: date
+    edad: int = Field(..., gt=12, le=120)
 
-    @validator('sexo')
+    @field_validator('sexo')
+    @classmethod
     def sexo_valido(cls, v):
         if v not in ['Masculino', 'Femenino']:
             raise ValueError("El sexo debe ser 'Masculino' o 'Femenino'")
         return v
 
-    @validator('nivel_actividad')
+    @field_validator('nivel_actividad')
+    @classmethod
     def nivel_actividad_valido(cls, v):
         if v not in ['Sedentario', 'Ligero', 'Moderado', 'Intenso']:
             raise ValueError("El nivel de actividad no es válido")
-        return v
-        
-    @validator('fecha_nacimiento')
-    def validar_edad(cls, v):
-        today = date.today()
-        edad = today.year - v.year - ((today.month, today.day) < (v.month, v.day))
-        if not (13 <= edad <= 120):
-            raise ValueError(f'La edad debe estar entre 13 y 120 años. Edad calculada: {edad} años')
         return v
 
 class UsuarioCreate(UsuarioBase):
@@ -110,41 +97,26 @@ class UsuarioPublic(UsuarioBase):
     registro: datetime
 
     class Config:
-        orm_mode = True # Permite a Pydantic leer datos desde modelos ORM
+        orm_mode = True
 
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 # --- 4. Lógica de Autenticación y JWT ---
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 # --- 5. Creación de la Aplicación y Endpoints ---
-
-app = FastAPI(
-    title="API de Registro y Nutrición",
-    description="Una API para gestionar el registro y login de usuarios.",
-    version="1.0.0"
-)
+app = FastAPI(title="API de Registro y Nutrición", version="1.0.0")
 
 @app.post("/register/", response_model=UsuarioPublic, status_code=status.HTTP_201_CREATED, tags=["Auth"])
 def register_user(usuario: UsuarioCreate, db: Session = Depends(get_db)):
-    """
-    Registra un nuevo usuario en la base de datos.
-    - Valida que el nombre de usuario no exista.
-    - Hashea la contraseña antes de guardarla.
-    """
     db_user = db.query(Usuario).filter(Usuario.nombre_usuario == usuario.nombre_usuario).first()
     if db_user:
         raise HTTPException(
@@ -161,7 +133,8 @@ def register_user(usuario: UsuarioCreate, db: Session = Depends(get_db)):
         altura=usuario.altura,
         meta_calorias=usuario.meta_calorias,
         nivel_actividad=usuario.nivel_actividad,
-        fecha_nacimiento=usuario.fecha_nacimiento
+        fecha_nacimiento=usuario.fecha_nacimiento,
+        edad=usuario.edad
     )
     
     db.add(nuevo_usuario)
@@ -170,38 +143,23 @@ def register_user(usuario: UsuarioCreate, db: Session = Depends(get_db)):
     
     return nuevo_usuario
 
-
 @app.post("/login/", response_model=Token, tags=["Auth"])
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """
-    Autentica a un usuario y retorna un token JWT.
-    Utiliza `OAuth2PasswordRequestForm` para que puedas usar el formulario de "Authorize"
-    en la documentación de Swagger UI.
-    - **username**: corresponde a `nombre_usuario`.
-    - **password**: corresponde a la contraseña.
-    """
     user = db.query(Usuario).filter(Usuario.nombre_usuario == form_data.username).first()
-    
-    if not user or not user.check_password(form_data.password):
+    if not user or not check_password_hash(user.password_hash, form_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Nombre de usuario o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        
-    access_token_expires = timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRES_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.nombre_usuario}, expires_delta=access_token_expires
-    )
+    
+    expire_delta = timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRES_MINUTES)
+    access_token = create_access_token(data={"sub": user.nombre_usuario}, expires_delta=expire_delta)
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-
 @app.get("/users/me/", response_model=UsuarioPublic, tags=["Users"])
-def read_users_me(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    """
-    Endpoint protegido que devuelve los datos del usuario autenticado.
-    """
+def read_users_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se pudieron validar las credenciales",
@@ -220,8 +178,8 @@ def read_users_me(db: Session = Depends(get_db), token: str = Depends(oauth2_sch
         raise credentials_exception
     return user
 
-# --- Ejecución de la aplicación (para desarrollo) ---
+# << MODIFICADO >>: Se cambia 'main:app' por 'api:app' para reflejar el nuevo nombre del archivo.
 if __name__ == "__main__":
     print("Iniciando servidor FastAPI...")
     print("Accede a la documentación en http://127.0.0.1:8000/docs")
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)
