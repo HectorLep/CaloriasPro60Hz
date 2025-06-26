@@ -93,6 +93,8 @@ class ConfigButton(QPushButton):
                 color: #BDC3C7;
             }}
         """)
+        
+        
 
 class DangerButton(QPushButton):
     """Botón de peligro personalizado"""

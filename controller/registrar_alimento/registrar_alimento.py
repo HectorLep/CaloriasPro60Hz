@@ -97,7 +97,11 @@ class RegistroAlimentoPyQt6(QWidget):
             color: #4CAF50;
             font-weight: bold;
             font-size: 20px;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         """)
+
         
         # Sección de selección de alimento
         self.ui_manager.create_frame(self, 80, 35, 250, 40, "#2E86AB")
@@ -109,6 +113,9 @@ class RegistroAlimentoPyQt6(QWidget):
             color: white;
             font-weight: bold;
             font-size: 16px;
+            border: none;
+            padding: 0px;
+            margin: 0px;            
         """)
         
         # ComboBox para alimentos
@@ -172,6 +179,9 @@ class RegistroAlimentoPyQt6(QWidget):
             color: white;
             font-weight: bold;
             font-size: 16px;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         """)
         
         # Entry para buscar alimentos
@@ -239,6 +249,9 @@ class RegistroAlimentoPyQt6(QWidget):
             color: white;
             font-weight: bold;
             font-size: 16px;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         """)
         
         self.ui_manager.create_frame(self, 410, 80, 280, 40, "#E9C46A")
@@ -250,6 +263,9 @@ class RegistroAlimentoPyQt6(QWidget):
             color: #2b2b2b;
             font-weight: bold;
             font-size: 16px;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         """)
         
         # Total de calorías
@@ -262,6 +278,9 @@ class RegistroAlimentoPyQt6(QWidget):
             color: white;
             font-weight: bold;
             font-size: 16px;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         """)
         
         self.ui_manager.create_frame(self, 410, 185, 280, 40, "#E9C46A")
@@ -273,6 +292,9 @@ class RegistroAlimentoPyQt6(QWidget):
             color: #2b2b2b;
             font-weight: bold;
             font-size: 16px;
+            border: none;
+            padding: 0px;
+            margin: 0px;
         """)
         
         # Botón de ayuda
@@ -362,6 +384,9 @@ class RegistroAlimentoPyQt6(QWidget):
                 font-weight: bold;
                 font-size: 16px;
                 text-align: center;
+                border: none;
+                padding: 0px;
+                margin: 0px;
             """)
     
     def on_alimento_select(self, selected_alimento):
@@ -406,6 +431,9 @@ class RegistroAlimentoPyQt6(QWidget):
                 color: white;
                 font-weight: bold;
                 font-size: 16px;
+                border: none;
+                padding: 0px;
+                margin: 0px;
             """)
         else:
             self.label_calorias.show()
@@ -453,6 +481,9 @@ class RegistroAlimentoPyQt6(QWidget):
                 color: white;
                 font-weight: bold;
                 font-size: 16px;
+                border: none;
+                padding: 0px;
+                margin: 0px;
             """)
         else:
             self.frame_hora.show()
@@ -474,6 +505,7 @@ class RegistroAlimentoPyQt6(QWidget):
                 padding: 8px;
                 border-radius: 10px;
                 font-weight: bold;
+                margin: 0px;
                 }
                 QPushButton:hover {
                     background-color: #FB8C00;
