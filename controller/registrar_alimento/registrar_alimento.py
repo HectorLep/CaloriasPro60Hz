@@ -2,7 +2,7 @@
 from PyQt6.QtWidgets import (QWidget,QComboBox, QMessageBox)
 from PyQt6.QtCore import Qt, pyqtSignal
 from datetime import datetime
-
+from PyQt6.QtCore import QTimer
 from model.registrar_alimento.repositorio import SQLiteAlimentoRepository
 from model.registrar_alimento.searchmanager import BuscadorManager
 from model.registrar_alimento.timemanager import TiempoManager
@@ -303,9 +303,14 @@ class RegistroAlimentoPyQt6(QWidget):
     
     def setup_connections(self):
         """Configura las conexiones de señales"""
-        self.combo_box.currentTextChanged.connect(self.on_alimento_select)
-        # El buscador ya maneja sus propias conexiones
-    
+        self.combo_box.currentIndexChanged.connect(
+            lambda index: QTimer.singleShot(0, lambda: self._combo_index_changed(index)))
+        
+    def _combo_index_changed(self, index):
+        """Llama a on_alimento_select con el texto del índice seleccionado"""
+        selected_alimento = self.combo_box.itemText(index)
+        self.on_alimento_select(selected_alimento)
+
     def _hide_time_components(self):
         """Oculta los componentes de tiempo"""
         if self.tiempo_manager:
@@ -364,9 +369,10 @@ class RegistroAlimentoPyQt6(QWidget):
         if selected_alimento == "Seleccionar alimento" or not selected_alimento:
             self._hide_alimento_controls()
             return
-            
-        self.alimento_seleccionado = True
         
+        self.alimento_seleccionado = True
+        self._hide_alimento_controls()  # << NUEVO
+
         # Obtener información del alimento
         try:
             alimento_info = self.repository.buscar_alimento_en_db(selected_alimento)
@@ -382,13 +388,15 @@ class RegistroAlimentoPyQt6(QWidget):
     
     def show_alimento_controls(self, calorias_porcion):
         """Muestra los controles cuando se selecciona un alimento"""
-        
+    
         # Frame y label para cantidad
         if not hasattr(self, 'frame_cantidad'):
             self.frame_cantidad = self.ui_manager.create_frame(
                 self, 80, 350, 250, 40, "#2E86AB"
             )
-        
+        else:
+            self.frame_cantidad.show()
+
         if not self.label_calorias:
             self.label_calorias = self.ui_manager.create_label(
                 self, "", 90, 355, 230, 30, 16
@@ -399,12 +407,14 @@ class RegistroAlimentoPyQt6(QWidget):
                 font-weight: bold;
                 font-size: 16px;
             """)
-        
+        else:
+            self.label_calorias.show()
+
         if calorias_porcion is not None:
             self.label_calorias.setText("Cantidad de porciones")
         else:
             self.label_calorias.setText("Cantidad en gramos")
-        
+    
         # Entry para cantidad
         if not self.entry:
             self.entry = self.ui_manager.create_entry(
@@ -428,10 +438,9 @@ class RegistroAlimentoPyQt6(QWidget):
                 }
             """)
         else:
-            self.entry.move(80, 400)
             self.entry.show()
-        
-        # Label para hora
+    
+        # Label y frame para hora
         if not self.label_hora:
             self.frame_hora = self.ui_manager.create_frame(
                 self, 410, 250, 280, 40, "#2E86AB"
@@ -445,71 +454,68 @@ class RegistroAlimentoPyQt6(QWidget):
                 font-weight: bold;
                 font-size: 16px;
             """)
-        
-        # Mostrar controles de tiempo
+        else:
+            self.frame_hora.show()
+            self.label_hora.show()
+    
+        # Mostrar sliders de hora
         self._show_time_components()
-        
+    
         # Botón para hora actual
         if not self.boton_hora_actual:
             self.boton_hora_actual = self.ui_manager.create_button(
                 self, "Usar Hora Actual", 400, 410, 150, 35, 
                 self.tiempo_manager.set_current_time
             )
-            self.boton_hora_actual.setStyleSheet("""
-                QPushButton {
-                    background-color: #E9C46A;
-                    border: none;
-                    color: #2b2b2b;
-                    border-radius: 10px;
-                    font-size: 12px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #d4a933;
-                    transform: scale(1.02);
-                }
-                QPushButton:pressed {
-                    background-color: #c19622;
-                }
-            """)
+            self.boton_hora_actual.setStyleSheet(""" ... """)
         else:
             self.boton_hora_actual.show()
-        
+    
         # Botón registrar
         if not self.boton_registrar:
             self.boton_registrar = self.ui_manager.create_button(
                 self, "Registrar Alimento", 80, 460, 240, 50, 
                 self.boton_mensajes_insert
             )
-            self.boton_registrar.setStyleSheet("""
-                QPushButton {
-                    background-color: #4CAF50;
-                    border: none;
-                    color: white;
-                    border-radius: 15px;
-                    font-size: 16px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #45a049;
-                    transform: scale(1.02);
-                }
-                QPushButton:pressed {
-                    background-color: #3d8b40;
-                }
-            """)
+            self.boton_registrar.setStyleSheet(""" ... """)
         else:
+            self.boton_registrar.show()
+    
+        self.repaint()
+        self.update()
+        if hasattr(self, 'frame_cantidad'):
+            self.frame_cantidad.show()
+        if self.label_calorias:
+            self.label_calorias.show()
+        if self.entry:
+            self.entry.show()
+        if hasattr(self, 'frame_hora'):
+            self.frame_hora.show()
+        if self.label_hora:
+            self.label_hora.show()
+        if self.boton_hora_actual:
+            self.boton_hora_actual.show()
+        if self.boton_registrar:
             self.boton_registrar.show()
     
     def _hide_alimento_controls(self):
         """Oculta los controles de alimento"""
         self._hide_time_components()
+
+        if hasattr(self, 'frame_cantidad'):
+            self.frame_cantidad.hide()
+        if self.label_calorias:
+            self.label_calorias.hide()
+        if self.entry:
+            self.entry.hide()
+        if hasattr(self, 'frame_hora'):
+            self.frame_hora.hide()
+        if self.label_hora:
+            self.label_hora.hide()
         if self.boton_hora_actual:
             self.boton_hora_actual.hide()
         if self.boton_registrar:
             self.boton_registrar.hide()
-        if self.entry:
-            self.entry.hide()
     
     def mostrar_advertencia(self):
         """Muestra mensaje de ayuda"""

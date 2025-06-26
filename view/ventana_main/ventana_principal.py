@@ -9,8 +9,8 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QLabel, QFrame, QStackedWidget)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont
-from model.database_manager import ChartDataManager
-from view.grafico_view import GraficoView
+from model.grafico.database_manager import ChartDataManager
+from view.grafico.grafico_view import GraficoView
 from ..sidebar import Sidebar
 from .welcome_screen import WelcomeScreen
 from ..menu import Menu

@@ -34,6 +34,10 @@ class TiempoManager:
         
         self.position_widgets()
         self.update_time_label()
+        self.hour_slider.hide()
+        self.minute_slider.hide()
+        self.time_label.hide()
+        
 
     def position_widgets(self):
         """Posiciona los widgets usando coordenadas relativas"""

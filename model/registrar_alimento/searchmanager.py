@@ -1,5 +1,6 @@
 from PyQt6.QtCore import QRect
 
+
 class BuscadorManager:
     def __init__(self, parent, entry, listbox, repository):
         self.entry_buscar = entry
@@ -18,31 +19,36 @@ class BuscadorManager:
         if not typeado or typeado == '':
             self.alimentos_buscar = []
             self.match = []
-        else:
-            self.alimentos_buscar = self.repository.cargar_alimentos()
-            self.match = [i for i in self.alimentos_buscar if typeado.lower() in i.lower()]
+            self.update_coincidencias()
+
+            # 🔥 Ocultar controles si se borra el texto
+            if hasattr(self.parent, '_hide_alimento_controls'):
+                self.parent._hide_alimento_controls()
+            return
+
+        self.alimentos_buscar = self.repository.cargar_alimentos()
+        self.match = [i for i in self.alimentos_buscar if typeado.lower() in i.lower()]
         self.update_coincidencias()
+
 
     def update_coincidencias(self):
         self.coincidencias.clear()
         num_coincidencias = len(self.match)
-        
+
         if num_coincidencias > 0:
-            # Calcular dimensiones relativas
-            parent_width = self.parent.width()
-            parent_height = self.parent.height()
-            
             height = min(num_coincidencias, 5)
-            x = int(parent_width * 0.1)
-            y = int(parent_height * 0.4)
-            width = int(parent_width * 0.3)
-            list_height = int(parent_height * 0.05 * height)
-            
-            # Posicionar y mostrar el listbox
+
+            # Posicionar justo debajo del entry_buscar
+            x = self.entry_buscar.x()
+            y = self.entry_buscar.y() + self.entry_buscar.height()
+            width = self.entry_buscar.width()
+            item_height = 35  # altura por ítem aprox.
+            list_height = item_height * height
+
             self.coincidencias.setGeometry(QRect(x, y, width, list_height))
+            self.coincidencias.raise_()  # Asegurar que esté al frente
             self.coincidencias.show()
-            
-            # Agregar elementos
+
             for alimento in self.match:
                 self.coincidencias.addItem(alimento)
         else:
@@ -53,10 +59,12 @@ class BuscadorManager:
         self.rellenar_con_texto(item.text())
 
     def rellenar_con_texto(self, texto):
-        """Rellena el entry con el texto seleccionado"""
-        self.entry_buscar.clear()
+        """Rellena el entry con el texto seleccionado y activa los controles"""
         self.entry_buscar.setText(texto)
         self.coincidencias.hide()
+
+        if hasattr(self.parent, 'on_alimento_select'):
+            self.parent.on_alimento_select(texto)
 
     def rellenar(self, callback):
         """Método para compatibilidad con el callback original"""
