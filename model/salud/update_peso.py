@@ -3,17 +3,29 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QLabel,
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from datetime import datetime
-from model.util.base import DBManager
+# from model.util.base import DBManager # Eliminado
+from PyQt6.QtWidgets import QMessageBox # Asegurar que QMessageBox está importado
 
 class Peso(QDialog):
     # Señal para notificar cuando se actualiza el peso
     peso_actualizado = pyqtSignal()
     
-    def __init__(self, parent=None, usuario="default_user", callback=None):
+    # def __init__(self, parent=None, usuario="default_user", callback=None): # Firma original
+    def __init__(self, parent=None, api_client=None, callback=None): # Nueva firma
         super().__init__(parent)
-        self.usuario = usuario
+        # self.usuario = usuario # Eliminado
+        self.api_client = api_client
         self.callback = callback
         
+        if not self.api_client:
+            # Esto es un problema crítico, el diálogo no puede funcionar sin el cliente API.
+            # Podríamos deshabilitar todo o mostrar un error inmediato.
+            # Por ahora, se asumirá que siempre se pasa un api_client válido.
+            print("ERROR CRÍTICO: Peso dialog iniciado sin api_client.")
+            # Considerar cerrar o mostrar error aquí. QMessageBox.critical(self, "Error", "Error interno: No se proporcionó cliente API.")
+            # self.close()
+            # return
+
         self.setWindowTitle('Actualizar peso')
         self.setFixedSize(400, 270)
         self.setModal(True)  # Equivalente a attributes('-topmost', True)
@@ -124,175 +136,165 @@ class Peso(QDialog):
             }
         """)
     
-    def validate_weight_change(self, new_weight):
-        """Valida si el nuevo peso es razonable comparado con el peso anterior."""
-        conn = None
+    def validate_weight_change(self, new_weight_kg: float) -> bool:
+        """
+        Valida si el nuevo peso es razonable comparado con el peso actual en la API.
+        La lógica de fechas y umbrales diarios/mensuales se simplifica
+        ya que la API actual no provee historial de pesos.
+        """
+        if not self.api_client: return False # No se puede validar
+
         try:
-            conn = DBManager.conectar_usuario(self.usuario)
-            query = "SELECT peso, fecha FROM peso ORDER BY num DESC LIMIT 1"
-            resultado = DBManager.ejecutar_query(conn, query)
+            user_data = self.api_client.get_user_profile()
+            if not user_data or 'peso' not in user_data:
+                # No hay peso previo en la API o error al obtenerlo, aceptar el nuevo peso.
+                return True
             
-            if not resultado:
-                return True  # No hay peso previo, aceptar el nuevo peso
+            previous_weight_kg = user_data['peso']
+            if previous_weight_kg is None: # Podría ser que el campo exista pero sea None
+                 return True
+
+            weight_diff = abs(new_weight_kg - previous_weight_kg)
             
-            previous_weight, previous_date_str = resultado
-            previous_date = datetime.strptime(previous_date_str, "%d-%m-%Y")
-            current_date = datetime.now()
-            days_diff = (current_date - previous_date).days
+            # Umbral de cambio significativo general (ej. 15kg)
+            significant_change_threshold = 15
             
-            weight_diff = abs(new_weight - previous_weight)
-            
-            # Definir umbrales
-            daily_threshold = 5  # ±5 kg en un día es sospechoso
-            monthly_threshold = 15  # ±15 kg en un mes es sospechoso
-            
-            # Validar según el tiempo transcurrido
-            if days_diff <= 1 and weight_diff > daily_threshold:
+            if weight_diff > significant_change_threshold:
                 reply = QMessageBox.question(
                     self,
                     "Confirmar Peso",
-                    f"El peso ingresado ({new_weight} kg) difiere significativamente de tu peso anterior "
-                    f"({previous_weight} kg) registrado hace {days_diff} día(s). ¿Es correcto este valor?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                )
-                return reply == QMessageBox.StandardButton.Yes
-                
-            elif days_diff <= 30 and weight_diff > monthly_threshold:
-                reply = QMessageBox.question(
-                    self,
-                    "Confirmar Peso",
-                    f"El peso ingresado ({new_weight} kg) indica un cambio significativo de {weight_diff} kg "
-                    f"desde tu peso anterior ({previous_weight} kg) registrado hace {days_diff} día(s). "
+                    f"El peso ingresado ({new_weight_kg} kg) indica un cambio significativo de {weight_diff:.1f} kg "
+                    f"respecto a su peso actual registrado en el perfil ({previous_weight_kg} kg). "
                     f"¿Es correcto este valor?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No
                 )
                 return reply == QMessageBox.StandardButton.Yes
             
-            return True  # Cambio dentro de los umbrales
+            return True  # Cambio dentro del umbral
             
         except Exception as e:
-            print(f"Error al validar peso: {e}")
-            QMessageBox.critical(self, "Error", "No se pudo validar el peso. Intenta de nuevo.")
+            print(f"Error al validar peso con la API: {e}")
+            QMessageBox.critical(self, "Error de Validación",
+                                 "No se pudo validar el peso con el servidor. Por favor, intente de nuevo.")
             return False
-        finally:
-            if conn:
-                DBManager.cerrar_conexion(conn)
 
     def registrar_peso(self):
-        """Registra el nuevo peso en la base de datos"""
-        peso_texto = self.peso_entry.text().strip()
+        """Registra el nuevo peso actualizando el perfil del usuario vía API."""
+        if not self.api_client:
+            QMessageBox.critical(self, "Error", "Funcionalidad no disponible (sin cliente API).")
+            return
+
+        peso_texto = self.peso_entry.text().strip().replace(',', '.')
         
         if not peso_texto:
-            QMessageBox.warning(self, "Advertencia", "Ingrese un peso.")
+            QMessageBox.warning(self, "Advertencia", "Por favor, ingrese un peso.")
             return
         
-        conn = None
         try:
-            # Reemplazar coma por punto para admitir formatos comunes de decimales
-            peso_texto = peso_texto.replace(',', '.')
-            # Intentar convertir el peso a decimal
-            peso = float(peso_texto)
+            nuevo_peso_kg = float(peso_texto)
             
-            # Validar que el peso sea razonable
-            if peso <= 0 or peso > 500:
+            if not (0 < nuevo_peso_kg <= 500): # Rango de peso razonable
                 QMessageBox.warning(self, "Advertencia", "Ingrese un peso válido (entre 0 y 500 kg).")
                 return
             
-            # Validar cambio de peso
-            if not self.validate_weight_change(peso):
-                return  # Validación fallida o cancelada
-            
-            conn = DBManager.conectar_usuario(self.usuario)
-            current_date = datetime.now().strftime('%d-%m-%Y')
+            if not self.validate_weight_change(nuevo_peso_kg):
+                return  # Validación fallida o el usuario canceló
 
-            # Verificar si ya existe un peso registrado hoy
-            query = "SELECT peso FROM peso WHERE fecha = ?"
-            params = (current_date,)
-            result = DBManager.ejecutar_query(conn, query, params)
+            # --- Interacción con la API ---
+            # IMPORTANTE: La API actual (controller/API/user/api.py) NO TIENE un endpoint
+            # para actualizar el perfil del usuario (ej. PUT /users/me/).
+            # El siguiente código asume que api_client.update_user_profile({'peso': nuevo_peso_kg})
+            # realizaría dicha llamada. Si el endpoint no existe, esto fallará.
             
-            if result:
-                # Ya existe un peso registrado hoy, preguntar si reemplazar
-                reply = QMessageBox.question(
-                    self,
-                    "Peso ya registrado",
-                    f"Ya registraste un peso ({result[0]} kg) hoy. ¿Deseas reemplazarlo con {peso} kg?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                )
-                if reply != QMessageBox.StandardButton.Yes:
-                    return
+            print(f"INFO: Intentando actualizar peso a {nuevo_peso_kg} kg vía API.")
+            try:
+                # Asumiendo que el api_client tiene un método para actualizar el perfil,
+                # y que el endpoint PUT /users/me/ o similar existe y acepta {'peso': ...}
+                self.api_client.update_user_profile({'peso': nuevo_peso_kg})
                 
-                # Actualizar el peso existente
-                query = "UPDATE peso SET peso = ? WHERE fecha = ?"
-                params = (peso, current_date)
-            else:
-                # Insertar nuevo peso
-                query = "INSERT INTO peso (fecha, peso) VALUES (?, ?)"
-                params = (current_date, peso)
+                QMessageBox.information(self, "Éxito", "Peso actualizado correctamente en su perfil.")
+                self.peso_actualizado.emit()
+                if self.callback:
+                    self.callback()
+                self.accept() # Cerrar diálogo
             
-            DBManager.ejecutar_query(conn, query, params, commit=True)
+            except AttributeError: # Si api_client no tiene update_user_profile
+                 QMessageBox.critical(self, "Error de Desarrollo",
+                                     "La función para actualizar el perfil no está implementada en el cliente API.")
+            except Exception as api_error: # Captura errores de red, HTTP 4xx/5xx de la API, etc.
+                print(f"Error de API al registrar peso: {api_error}")
+                # Aquí se podría verificar el status code si la excepción es de requests
+                # Por ejemplo, si es un 404 o 405 podría indicar que el endpoint no existe.
+                # if isinstance(api_error, requests.exceptions.HTTPError) and api_error.response.status_code in [404, 405]:
+                #     msg = "La funcionalidad para actualizar el peso en el servidor no está disponible."
+                # else:
+                #     msg = "Error al comunicar con el servidor para actualizar el peso."
+                QMessageBox.critical(self, "Error de API", f"No se pudo actualizar el peso en el servidor: {api_error}")
 
-            QMessageBox.information(self, "Éxito", "Peso actualizado correctamente")
-            
-            # Emitir señal de actualización
-            self.peso_actualizado.emit()
-            
-            # Ejecutar callback si existe
-            if self.callback:
-                self.callback()
-            
-            self.accept()  # Cerrar diálogo con éxito
-            
         except ValueError:
             QMessageBox.warning(self, "Advertencia", "Ingrese un peso válido (solo números).")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", "Error al registrar el peso. Intenta de nuevo.")
-            print(f"Error al registrar peso: {e}")
-        finally:
-            if conn:
-                DBManager.cerrar_conexion(conn)
+        except Exception as e: # Otros errores inesperados
+            QMessageBox.critical(self, "Error Inesperado", f"Ocurrió un error al procesar el peso: {e}")
+            print(f"Error inesperado en registrar_peso: {e}")
 
-    def get_peso(self):
-        """Obtiene el último peso registrado"""
-        conn = None
+    def get_peso(self) -> str:
+        """Obtiene el último peso registrado desde el perfil de la API."""
+        if not self.api_client:
+            return "Cliente API no disponible."
         try:
-            conn = DBManager.conectar_usuario(self.usuario)
-            query = "SELECT peso FROM peso ORDER BY num DESC LIMIT 1;"
-            resultado = DBManager.ejecutar_query(conn, query)
-            
-            if resultado:
-                peso_str = resultado[0]
-                return f'Su último peso registrado fue: {peso_str} kg'
+            user_data = self.api_client.get_user_profile() # Método hipotético
+            if user_data and 'peso' in user_data and user_data['peso'] is not None:
+                peso_kg = user_data['peso']
+                # La API no proporciona fecha específica del registro de peso, solo el valor actual.
+                return f'Su peso actual en el perfil es: {peso_kg:.1f} kg'
             else:
-                return 'Aún no has registrado tu peso!'
+                return 'No hay peso registrado en su perfil.'
         except Exception as e:
-            print(f"Error al obtener peso: {e}")
-            return 'Error al cargar peso'
-        finally:
-            if conn:
-                DBManager.cerrar_conexion(conn)
+            print(f"Error al obtener peso desde la API: {e}")
+            return 'Error al cargar peso desde el servidor.'
     
-    def get_fecha(self):
-        """Obtiene la fecha del último peso registrado"""
-        conn = None
-        try:
-            conn = DBManager.conectar_usuario(self.usuario)
-            query = "SELECT fecha FROM peso ORDER BY num DESC LIMIT 1;"
-            resultado = DBManager.ejecutar_query(conn, query)
-            
-            if resultado:
-                fecha_str = resultado[0]
-                return fecha_str
-            else:
-                return None
-        except Exception as e:
-            print(f"Error al obtener fecha: {e}")
-            return None
-        finally:
-            if conn:
-                DBManager.cerrar_conexion(conn)
+    def get_fecha(self) -> str | None:
+        """
+        Obtiene la fecha del último peso registrado.
+        NOTA: La API actual no almacena un historial de pesos con fechas.
+        Esta función podría retornar la fecha de última modificación del perfil si la API la proveyera.
+        Por ahora, retorna None.
+        """
+        # user_data = self.api_client.get_user_profile()
+        # if user_data and 'fecha_actualizacion_perfil' in user_data:
+        #    return user_data['fecha_actualizacion_perfil']
+        print("INFO: get_fecha no puede obtener fecha específica del peso con la API actual.")
+        return None
 
 # Ejemplo de uso para testing
 if __name__ == "__main__":
+    # Para probar este diálogo, necesitaríamos un mock de api_client.
+    # Ejemplo de Mock APIClient:
+    class MockAPIClient:
+        def __init__(self):
+            self.profile = {'peso': 75.5, 'altura': 180, 'sexo': 'Masculino', 'edad': 30}
+
+        def get_user_profile(self):
+            print("MockAPIClient: get_user_profile() llamado")
+            # Simular un error ocasional:
+            # import random
+            # if random.random() < 0.1:
+            #     raise Exception("Error simulado de red al obtener perfil")
+            return self.profile
+
+        def update_user_profile(self, data):
+            print(f"MockAPIClient: update_user_profile() llamado con data: {data}")
+            if 'peso' in data:
+                # Simular un error si el peso es > 300 (ejemplo de validación de API)
+                # if data['peso'] > 300:
+                #     raise Exception(f"Error de API: Peso {data['peso']} excede el límite.")
+                self.profile['peso'] = data['peso']
+                print(f"MockAPIClient: Peso actualizado a {self.profile['peso']}")
+            # Simular error si el endpoint no existiera (ej. lanzando un error específico)
+            # raise requests.exceptions.HTTPError(response=type('Response', (), {'status_code': 404, 'reason': 'Not Found'}))
+
+
     from PyQt6.QtWidgets import QApplication
     import sys
     import os

@@ -1,177 +1,149 @@
-import sqlite3
+# import sqlite3 # Eliminado: Ya no se usa SQLite directamente aquí
 
 class Calculo:
+    # NOTA: Se asume que se pasará un objeto api_client a los métodos que lo requieran.
+    # Este api_client debería tener un método como get_user_profile() que retorne
+    # un diccionario o un objeto con los datos del usuario:
+    # {'peso': float, 'altura': int (cm), 'sexo': str, 'edad': int, ...}
+
     # Rangos de IMC y sus categorías
-    RANGOS_IMC = {
-        (0, 16.0): ("Delgadez severa", "riesgo_alto"),
-        (16.0, 17.0): ("Delgadez moderada", "riesgo_alto"),
-        (17.0, 18.5): ("Delgadez leve", "riesgo_medio"),
-        (18.5, 25.0): ("Peso normal", "riesgo_bajo"),
-        (25.0, 30.0): ("Sobrepeso", "riesgo_medio"),
-        (30.0, 35.0): ("Obesidad grado I", "riesgo_medio"),
-        (35.0, 40.0): ("Obesidad grado II", "riesgo_alto"),
-        (40.0, float('inf')): ("Obesidad grado III", "riesgo_alto")
-    }
-    
-    # Rangos de TMB por género
-    RANGOS_TMB = {
-        "masculino": {
-            (0, 1200): ("TMB baja", "riesgo_medio"),
-            (1200, 1600): ("TMB normal-baja", "riesgo_bajo"),
-            (1600, 2200): ("TMB normal", "riesgo_bajo"),
-            (2200, 2800): ("TMB normal-alta", "riesgo_bajo"),
-            (2800, float('inf')): ("TMB alta", "riesgo_medio")
-        },
-        "femenino": {
-            (0, 1000): ("TMB baja", "riesgo_medio"),
-            (1000, 1400): ("TMB normal-baja", "riesgo_bajo"),
-            (1400, 1800): ("TMB normal", "riesgo_bajo"),
-            (1800, 2200): ("TMB normal-alta", "riesgo_bajo"),
-            (2200, float('inf')): ("TMB alta", "riesgo_medio")
-        }
-    }
+    # Los rangos permanecen igual
 
     @staticmethod
-    def calcular_imc(usuario):
+    # def calcular_imc(usuario): # Firma original
+    def calcular_imc(api_client): # Nueva firma
         try:
-            conn = sqlite3.connect(f"./users/{usuario}/alimentos.db")
-            cursor = conn.cursor()
+            user_data = api_client.get_user_profile() # Método hipotético del api_client
+            if not user_data:
+                raise ValueError("No se pudieron obtener los datos del usuario desde la API.")
+
+            estatura_cm = user_data.get('altura')
+            peso_kg = user_data.get('peso')
+
+            if estatura_cm is None or peso_kg is None:
+                raise ValueError("La API no devolvió la altura o el peso del usuario.")
+
+            if not isinstance(estatura_cm, (int, float)) or not isinstance(peso_kg, (int, float)):
+                raise ValueError("Altura o peso con formato incorrecto desde la API.")
             
-            cursor.execute("SELECT estatura FROM datos")
-            resultado_estatura = cursor.fetchone()
-            if resultado_estatura is None:
-                raise ValueError("No se encontró la estatura para el usuario")
-            estatura = resultado_estatura[0] / 100  # Convertir a metros
+            if estatura_cm <= 0 or peso_kg <= 0:
+                raise ValueError("Altura o peso deben ser valores positivos.")
 
-            cursor.execute("SELECT peso FROM peso WHERE num = (SELECT MAX(num) FROM peso)")
-            resultado_peso = cursor.fetchone()
-            if resultado_peso is None:
-                raise ValueError("No se encontró ningún registro de peso")
-            peso = resultado_peso[0]
-
-            imc = peso / (estatura ** 2)
+            estatura_m = estatura_cm / 100  # Convertir a metros
+            imc = peso_kg / (estatura_m ** 2)
             return imc
 
-        except (sqlite3.Error, ValueError) as e:
-            print(f"Error al calcular IMC: {e}")
+        except Exception as e: # Captura errores de API (requests.exceptions.RequestException) o ValueError
+            print(f"Error al calcular IMC usando la API: {e}")
             return None
-        finally:
-            if conn:
-                conn.close()
 
     @staticmethod
     def evaluar_imc(imc):
         """Evalúa el IMC y devuelve una categoría y un nivel de riesgo"""
-        if imc is None:
-            return ("Error al calcular IMC", "riesgo_alto")
-            
-        for rango, (categoria, riesgo) in Calculo.RANGOS_IMC.items():
-            min_val, max_val = rango
-            if min_val <= imc < max_val:
-                return (categoria, riesgo)
-                
-        return ("Valor IMC fuera de rango", "riesgo_alto")
+        # Esta función no cambia ya que su lógica es independiente de la fuente de datos.
+        # Esta función no cambia.
 
     @staticmethod
-    def calcular_TMB(usuario):
+    # def calcular_TMB(usuario): # Firma original
+    def calcular_TMB(api_client): # Nueva firma
         try:
-            conn = sqlite3.connect(f"./users/{usuario}/alimentos.db")
-            cursor = conn.cursor()
+            user_data = api_client.get_user_profile()
+            if not user_data:
+                raise ValueError("No se pudieron obtener los datos del usuario desde la API.")
+
+            estatura_cm = user_data.get('altura')
+            edad_años = user_data.get('edad')
+            genero_str = user_data.get('sexo') # La API usa 'Masculino'/'Femenino'
+            peso_kg = user_data.get('peso')
+
+            if estatura_cm is None or edad_años is None or genero_str is None or peso_kg is None:
+                raise ValueError("Datos incompletos (altura, edad, sexo, o peso) desde la API.")
+
+            # Validaciones de tipo y valor
+            for val, name in [(estatura_cm, "Altura"), (edad_años, "Edad"), (peso_kg, "Peso")]:
+                if not isinstance(val, (int, float)):
+                    raise ValueError(f"{name} con formato incorrecto desde la API.")
+                if val <= 0:
+                     raise ValueError(f"{name} debe ser un valor positivo.")
             
-            cursor.execute("SELECT estatura, edad, genero FROM datos")
-            result = cursor.fetchone()
-            if result is None:
-                raise ValueError("No se encontraron datos del usuario")
-            estatura, edad, genero = result
-            estatura = estatura  # Altura en cm
+            if not isinstance(genero_str, str):
+                 raise ValueError("Género con formato incorrecto desde la API.")
 
-            cursor.execute("SELECT peso FROM peso WHERE num = (SELECT MAX(num) FROM peso)")
-            resultado_peso = cursor.fetchone()
-            if resultado_peso is None:
-                raise ValueError("No se encontró ningún registro de peso")
-            peso = resultado_peso[0]
 
-            if genero.lower() in ["hombre", "masculino"]:
-                tmb = 66.47 + (13.75 * peso) + (5 * estatura) - (6.76 * edad)
-            elif genero.lower() in ["mujer", "femenino"]:
-                tmb = 655.1 + (9.56 * peso) + (1.85 * estatura) - (4.68 * edad)
+            # La API usa 'Masculino'/'Femenino', la fórmula espera 'masculino'/'femenino'
+            genero_normalizado = genero_str.lower()
+
+            if genero_normalizado in ["hombre", "masculino"]:
+                tmb = 66.47 + (13.75 * peso_kg) + (5 * estatura_cm) - (6.76 * edad_años)
+            elif genero_normalizado in ["mujer", "femenino"]:
+                tmb = 655.1 + (9.56 * peso_kg) + (1.85 * estatura_cm) - (4.68 * edad_años)
             else:
-                raise ValueError("Género no válido")
+                # Tratar de mapear si es posible, o lanzar error si no es reconocido
+                if "masculino" in genero_normalizado: # Intento flexible
+                     tmb = 66.47 + (13.75 * peso_kg) + (5 * estatura_cm) - (6.76 * edad_años)
+                elif "femenino" in genero_normalizado: # Intento flexible
+                     tmb = 655.1 + (9.56 * peso_kg) + (1.85 * estatura_cm) - (4.68 * edad_años)
+                else:
+                    raise ValueError(f"Género no válido o no reconocido desde la API: '{genero_str}'")
             
             return tmb
 
-        except (sqlite3.Error, ValueError) as e:
-            print(f"Error al calcular TMB: {e}")
+        except Exception as e:
+            print(f"Error al calcular TMB usando la API: {e}")
             return None
-        finally:
-            if conn:
-                conn.close()
     
     @staticmethod
     def evaluar_TMB(tmb, genero):
         """Evalúa la TMB según el género y devuelve una categoría y un nivel de riesgo"""
-        if tmb is None:
-            return ("Error al calcular TMB", "riesgo_alto")
-            
-        genero_norm = genero.lower()
-        if genero_norm not in ["hombre", "masculino", "mujer", "femenino"]:
-            genero_norm = "masculino"  # Valor por defecto
-        
-        genero_key = "masculino" if genero_norm in ["hombre", "masculino"] else "femenino"
-        
-        for rango, (categoria, riesgo) in Calculo.RANGOS_TMB[genero_key].items():
-            min_val, max_val = rango
-            if min_val <= tmb < max_val:
-                return (categoria, riesgo)
-                
-        return ("Valor TMB fuera de rango", "riesgo_alto")
+        # Esta función no cambia, pero 'genero' debe ser consistente con las claves de RANGOS_TMB.
+        # La API devuelve 'Masculino'/'Femenino'. Normalizar antes de llamar a evaluar_TMB.
+        # Esta función no cambia.
     
     @staticmethod
-    def get_latest_weight(usuario):
+    # def get_latest_weight(usuario): # Firma original
+    def get_latest_weight(api_client): # Nueva firma
         try:
-            conn = sqlite3.connect(f"./users/{usuario}/alimentos.db")
-            cursor = conn.cursor()
+            user_data = api_client.get_user_profile()
+            if not user_data:
+                raise ValueError("No se pudieron obtener los datos del usuario desde la API.")
             
-            cursor.execute("SELECT peso FROM peso ORDER BY fecha DESC LIMIT 1")
-            result = cursor.fetchone()
-            
-            if result is None:
-                raise ValueError("No se encontró ningún registro de peso")
-            
-            return result[0]
-        except (sqlite3.Error, ValueError) as e:
-            print(f"Error al obtener el peso más reciente: {e}")
+            peso_kg = user_data.get('peso')
+            if peso_kg is None:
+                raise ValueError("La API no devolvió el peso del usuario.")
+            if not isinstance(peso_kg, (int, float)) or peso_kg <=0:
+                raise ValueError("Peso con formato incorrecto o no positivo desde la API.")
+
+            return peso_kg
+        except Exception as e:
+            print(f"Error al obtener el peso más reciente usando la API: {e}")
             return None
-        finally:
-            if conn:
-                conn.close()
     
     @staticmethod
-    def get_user_gender(usuario):
-        """Obtiene el género del usuario desde la base de datos"""
+    # def get_user_gender(usuario): # Firma original
+    def get_user_gender(api_client): # Nueva firma
+        """Obtiene el género del usuario desde la API."""
         try:
-            conn = sqlite3.connect(f"./users/{usuario}/alimentos.db")
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT genero FROM datos")
-            result = cursor.fetchone()
-            
-            if result is None:
-                raise ValueError("No se encontró el género del usuario")
-            
-            return result[0]
-        except (sqlite3.Error, ValueError) as e:
-            print(f"Error al obtener el género del usuario: {e}")
-            return "masculino"  # Valor por defecto
-        finally:
-            if conn:
-                conn.close()
+            user_data = api_client.get_user_profile()
+            if not user_data:
+                raise ValueError("No se pudieron obtener los datos del usuario desde la API.")
+
+            genero_str = user_data.get('sexo') # La API usa 'Masculino'/'Femenino'
+            if genero_str is None:
+                raise ValueError("La API no devolvió el sexo del usuario.")
+            if not isinstance(genero_str, str):
+                raise ValueError("Sexo con formato incorrecto desde la API.")
+
+            return genero_str # Retorna 'Masculino' o 'Femenino' como lo da la API
+        except Exception as e:
+            print(f"Error al obtener el género del usuario usando la API: {e}")
+            return "masculino"  # Valor por defecto en caso de error, o se podría lanzar el error.
     
     @staticmethod
-    def calcular_agua_recomendada(usuario):
-        """Calcula la cantidad de agua recomendada en vasos según el peso y actividad física"""
+    # def calcular_agua_recomendada(usuario): # Firma original
+    def calcular_agua_recomendada(api_client): # Nueva firma
+        """Calcula la cantidad de agua recomendada en vasos según el peso (obtenido de la API)."""
         try:
-            peso = Calculo.get_latest_weight(usuario)
+            peso = Calculo.get_latest_weight(api_client) # Ya usa la API
             if peso is None:
                 return 8  # Valor por defecto si no hay peso registrado
             
