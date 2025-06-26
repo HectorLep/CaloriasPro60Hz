@@ -138,5 +138,21 @@ class GraficoView(QWidget):
             "💡 <b>Tip:</b> El botón 'Actualizar' es útil si los datos cambian en segundo plano."
         )
         msg.setIcon(QMessageBox.Icon.Information)
-        msg.setStyleSheet("QMessageBox { background-color: #2b2b2b; color: #ffffff; } QLabel { background-color: transparent; color: white; font-size: 14px; } QMessageBox QPushButton { background-color: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 5px; font-weight: bold; } QMessageBox QPushButton:hover { background-color: #45a049; }")
+        msg.setStyleSheet("""QMessageBox { 
+                          background-color: #2b2b2b;
+                          color: #ffffff;
+                          } QLabel { 
+                          background-color: transparent;
+                          color: white;
+                          font-size: 14px;
+                          } QMessageBox QPushButton {
+                              background-color: #4CAF50;
+                              color: white;
+                              border: none;
+                              padding: 8px 16px;
+                              border-radius: 5px;
+                              font-weight: bold;
+                              } QMessageBox QPushButton:hover {
+                                  background-color: #45a049;
+                                  }""")
         msg.exec()
