@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor 
 from .bar_chart_widget import BarChartWidget
 from model.grafico.database_manager import ChartDataManager
+from model.grafico.api_grafico import APICaloriesDataManager
 
 class GraficoView(QWidget):
     """
@@ -12,12 +13,13 @@ class GraficoView(QWidget):
     def __init__(self, data_provider: ChartDataManager):
         super().__init__()
         self.data_provider = data_provider
+        self.api_data_provider = APICaloriesDataManager()
         
         self.data_fetchers = {
-            "Consumo de Calorías": self.data_provider.get_calories_data,
+            "Consumo de Calorías": self.api_data_provider.get_calories_data,
             "Consumo de Agua": self.data_provider.get_water_data,
             "Registro de Peso": self.data_provider.get_weight_data
-        }
+            }
         
         self.init_ui()
         self.update_chart()

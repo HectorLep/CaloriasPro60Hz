@@ -78,8 +78,9 @@ class ChartDataManager:
 
         return labels, data
 
-    def get_calories_data(self, period: str) -> tuple[list, list]:
-        return self._get_aggregated_data("consumo_diario", "total_cal", "SUM", period)
+    '''funcion en caso de ya no usar api_grafico.py (es decir ya no usar la base de datos de la api para el total calorias)'''
+    #def get_calories_data(self, period: str) -> tuple[list, list]:         
+        #return self._get_aggregated_data("consumo_diario", "total_cal", "SUM", period)
 
     def get_water_data(self, period: str) -> tuple[list, list]:
         return self._get_aggregated_data("agua", "cant", "SUM", period)
