@@ -4,8 +4,8 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QPainter, QPen
 from .calculos import Calculo
 from model.util.colores import *
-import sqlite3
-from datetime import datetime
+# import sqlite3 # Eliminado: Ya no se usa SQLite directamente aquí
+from datetime import datetime # Se mantiene por si se usa para algo más, aunque no en las funciones modificadas
 import numpy as np
 
 class VasoAnimado(QWidget):
@@ -120,9 +120,11 @@ class AguaManager(QWidget):
     # Señal para notificar cambios en el consumo de agua
     agua_actualizada = pyqtSignal(int, int)  # vasos_actuales, vasos_recomendados
     
-    def __init__(self, usuario, parent=None):
+    # def __init__(self, usuario, parent=None): # Firma original
+    def __init__(self, usuario, api_client, parent=None): # Nueva firma
         super().__init__(parent)
-        self.usuario = usuario
+        self.usuario = usuario # Podría ser útil para mostrar, o eliminarse si api_client lo maneja todo
+        self.api_client = api_client
         self.max_vasos = 8
         self.vasos_recomendados = 8  # Valor predeterminado
         self.pulsaciones = 0
@@ -230,9 +232,10 @@ class AguaManager(QWidget):
         self.lbl_info_vasos.setStyleSheet(info_style)
 
     def actualizar_vasos_recomendados(self):
-        """Actualiza la cantidad de vasos recomendados basándose en el peso del usuario"""
+        """Actualiza la cantidad de vasos recomendados basándose en el peso del usuario obtenido vía API."""
         try:
-            self.vasos_recomendados = Calculo.calcular_agua_recomendada(self.usuario)
+            # Se asume que Calculo.calcular_agua_recomendada ha sido adaptado para usar api_client
+            self.vasos_recomendados = Calculo.calcular_agua_recomendada(self.api_client)
             self.max_vasos = self.vasos_recomendados
         except Exception as e:
             print(f"Error al calcular vasos recomendados: {e}")
@@ -332,63 +335,89 @@ class AguaManager(QWidget):
         """)
 
     def eliminar_vasito(self):
-        """Elimina un vaso de la base de datos"""
-        try:
-            conn = sqlite3.connect(f"./users/{self.usuario}/alimentos.db")
-            cursor = conn.cursor()
-            fecha_actual = datetime.now().strftime("%d-%m-%Y")
-            cursor.execute("SELECT cant FROM agua WHERE fecha = ?", (fecha_actual,))
-            resultado = cursor.fetchone()
+        """
+        Elimina un vaso.
+        NOTA: Esta función ya no interactúa con la base de datos. Los cambios son solo en memoria.
+        Para persistir estos datos, se necesitaría un endpoint en la API para decrementar
+        el contador de vasos de agua del usuario para la fecha actual.
+        """
+        # print(f"INFO: Llamada a eliminar_vasito. Pulsaciones actuales: {self.pulsaciones}. No hay persistencia.")
+        # El código de base de datos SQLite ha sido eliminado.
+        # try:
+        #     conn = sqlite3.connect(f"./users/{self.usuario}/alimentos.db")
+        #     cursor = conn.cursor()
+        #     fecha_actual = datetime.now().strftime("%d-%m-%Y")
+        #     cursor.execute("SELECT cant FROM agua WHERE fecha = ?", (fecha_actual,))
+        #     resultado = cursor.fetchone()
 
-            if resultado and resultado[0] > 0:
-                nueva_cantidad = resultado[0] - 1
-                cursor.execute("UPDATE agua SET cant = ? WHERE fecha = ?", (nueva_cantidad, fecha_actual))
+        #     if resultado and resultado[0] > 0:
+        #         nueva_cantidad = resultado[0] - 1
+        #         cursor.execute("UPDATE agua SET cant = ? WHERE fecha = ?", (nueva_cantidad, fecha_actual))
 
-            conn.commit()
-            conn.close()
-        except sqlite3.Error as e:
-            print(f"Error de base de datos: {e}")
+        #     conn.commit()
+        #     conn.close()
+        # except sqlite3.Error as e:
+        #     print(f"Error de base de datos: {e}")
+        pass # La lógica de decremento de self.pulsaciones ya está en eliminar_agua()
 
     def vasitos_mostrados(self):
-        """Carga los vasos desde la base de datos y actualiza la visualización"""
-        try:
-            conn = sqlite3.connect(f"./users/{self.usuario}/alimentos.db")
-            cursor = conn.cursor()
-            fecha_actual = datetime.now().strftime("%d-%m-%Y")
-            cursor.execute("SELECT cant FROM agua WHERE fecha = ?", (fecha_actual,))
-            resultado = cursor.fetchone()
-            cantidad_vasos = resultado[0] if resultado else 0
-            conn.close()
+        """
+        Carga los vasos y actualiza la visualización.
+        NOTA: Esta función ya no carga datos desde una base de datos persistente.
+        Siempre iniciará con 0 vasos al crear una nueva instancia de AguaManager.
+        Para cargar datos persistentes, se necesitaría un endpoint en la API
+        para obtener el consumo de agua del usuario para la fecha actual.
+        """
+        # print("INFO: Llamada a vasitos_mostrados. Inicializando a 0 vasos. No hay persistencia.")
+        # El código de base de datos SQLite ha sido eliminado.
+        # try:
+        #     conn = sqlite3.connect(f"./users/{self.usuario}/alimentos.db")
+        #     cursor = conn.cursor()
+        #     fecha_actual = datetime.now().strftime("%d-%m-%Y")
+        #     cursor.execute("SELECT cant FROM agua WHERE fecha = ?", (fecha_actual,))
+        #     resultado = cursor.fetchone()
+        #     cantidad_vasos = resultado[0] if resultado else 0
+        #     conn.close()
+        # except sqlite3.Error as e:
+        #     print(f"Error al cargar datos de agua: {e}")
+        #     cantidad_vasos = 0 # Default en caso de error
 
-            self.pulsaciones = cantidad_vasos
-            self.vaso.set_nivel_directo(cantidad_vasos)
-            self.actualizar_info_vasos()
-            
-            # Emitir señal inicial
-            self.agua_actualizada.emit(self.pulsaciones, self.vasos_recomendados)
-            
-        except sqlite3.Error as e:
-            print(f"Error al cargar datos de agua: {e}")
+        cantidad_vasos = 0 # Siempre inicia en 0 ya que no hay persistencia vía API
+
+        self.pulsaciones = cantidad_vasos
+        self.vaso.set_nivel_directo(cantidad_vasos)
+        self.actualizar_info_vasos()
+
+        # Emitir señal inicial
+        self.agua_actualizada.emit(self.pulsaciones, self.vasos_recomendados)
 
     def insertar_vasitos(self):
-        """Inserta o actualiza un vaso en la base de datos"""
-        try:
-            conn = sqlite3.connect(f"./users/{self.usuario}/alimentos.db")
-            cursor = conn.cursor()
-            fecha_actual = datetime.now().strftime("%d-%m-%Y")
-            cursor.execute("SELECT cant FROM agua WHERE fecha = ?", (fecha_actual,))
-            resultado = cursor.fetchone()
+        """
+        Inserta o actualiza un vaso.
+        NOTA: Esta función ya no interactúa con la base de datos. Los cambios son solo en memoria.
+        Para persistir estos datos, se necesitaría un endpoint en la API para incrementar
+        el contador de vasos de agua del usuario para la fecha actual.
+        """
+        # print(f"INFO: Llamada a insertar_vasitos. Pulsaciones actuales: {self.pulsaciones}. No hay persistencia.")
+        # El código de base de datos SQLite ha sido eliminado.
+        # try:
+        #     conn = sqlite3.connect(f"./users/{self.usuario}/alimentos.db")
+        #     cursor = conn.cursor()
+        #     fecha_actual = datetime.now().strftime("%d-%m-%Y")
+        #     cursor.execute("SELECT cant FROM agua WHERE fecha = ?", (fecha_actual,))
+        #     resultado = cursor.fetchone()
             
-            if resultado:
-                nueva_cantidad = resultado[0] + 1
-                cursor.execute("UPDATE agua SET cant = ? WHERE fecha = ?", (nueva_cantidad, fecha_actual))
-            else:
-                cursor.execute("INSERT INTO agua (fecha, cant) VALUES (?, 1)", (fecha_actual,))
+        #     if resultado:
+        #         nueva_cantidad = resultado[0] + 1
+        #         cursor.execute("UPDATE agua SET cant = ? WHERE fecha = ?", (nueva_cantidad, fecha_actual))
+        #     else:
+        #         cursor.execute("INSERT INTO agua (fecha, cant) VALUES (?, 1)", (fecha_actual,))
             
-            conn.commit()
-            conn.close()
-        except sqlite3.Error as e:
-            print(f"Error al insertar vaso: {e}")
+        #     conn.commit()
+        #     conn.close()
+        # except sqlite3.Error as e:
+        #     print(f"Error al insertar vaso: {e}")
+        pass # La lógica de incremento de self.pulsaciones ya está en agregar_agua()
 
     def get_progreso_agua(self):
         """Retorna el progreso actual del agua como porcentaje"""
