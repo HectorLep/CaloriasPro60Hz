@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  api-usuarios:
+    build:
+      context: .
+      dockerfile: Dockerfile.usuarios
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./usuarios.db
+      - Key_JWT=tu-clave-secreta-jwt-aqui
+    volumes:
+      - ./usuarios.db:/app/usuarios.db
+    networks:
+      - api-network
+
+  api-peso:
+    build:
+      context: .
+      dockerfile: Dockerfile.peso
+    ports:
+      - "8001:8001"
+    environment:
+      - PESO_DATABASE_URL=sqlite:///./peso.db
+      - Key_JWT=tu-clave-secreta-jwt-aqui
+      - USER_API_URL=http://api-usuarios:8000
+    volumes:
+      - ./peso.db:/app/peso.db
+    depends_on:
+      - api-usuarios
+    networks:
+      - api-network
+
+networks:
+  api-network:
+    driver: bridge
